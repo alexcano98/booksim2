@@ -1,7 +1,7 @@
 // $Id$
 
 /*
- Copyright (c) 2007-2015, Trustees of The Leland Stanford Junior University
+ Copyright (c) 2007-2012, Trustees of The Leland Stanford Junior University
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -25,31 +25,44 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _GLOBALS_HPP_
-#define _GLOBALS_HPP_
-#include <string>
-#include <vector>
-#include <iostream>
+#ifndef _HYPERX_HPP_
+#define _HYPERX_HPP_
 
-/*all declared in main.cpp*/
+#include "network.hpp"
 
-int GetSimTime();
+namespace Booksim
+{
 
-class Stats;
-Stats * GetStats(const std::string & name);
+    class Hyperx : public Network {
 
-extern bool gPrintActivity;
+      bool _mesh;
 
-extern int gK;
-extern int gN;
-extern int gC;
+      int _k;
+      int _n;
 
-extern int gNodes;
+      void _ComputeSize( const Configuration &config );
+      void _BuildNet( const Configuration &config );
+      void _BuildNet2( const Configuration &config );
 
-extern bool gTrace;
+      int _LeftChannel( int node, int dim );
+      int _RightChannel( int node, int dim );
 
-extern std::ostream * gWatchOut;
+      int _LeftNode( int node, int dim );
+      int _RightNode( int node, int dim );
 
-extern int *node_vectors;
+    public:
+      Hyperx( const Configuration &config, const string & name, bool mesh );
+      static void RegisterRoutingFunctions();
+
+      int GetN( ) const;
+      int GetK( ) const;
+
+
+      double Capacity( ) const;
+
+      void InsertRandomFaults( const Configuration &config );
+
+    };
+} // namespace Booksim
 
 #endif
