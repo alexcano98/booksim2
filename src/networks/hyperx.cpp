@@ -35,452 +35,200 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <sstream>
 #include "hyperx.hpp"
+
 #include "random_utils.hpp"
 #include "misc_utils.hpp"
+#include "globals.hpp"
 
-namespace Booksim
+
+Hyperx::Hyperx( const Configuration &config, const string & name, bool mesh ) :Network( config, name )
 {
-  Hyperx::Hyperx( const Configuration &config, const string & name, bool mesh ) :
-  Network( config, name )
-  {
-    _mesh = mesh;
+  _mesh = mesh;
 
-    _ComputeSize( config );
-    _Alloc( );
-    _BuildNet( config );
-  }
+  _ComputeSize( config );
+  _Alloc( );
+  _BuildNet( config );
+}
 
 
-  void Hyperx::_ComputeSize( const Configuration &config )
-  {
-    _k = config.GetInt( "k" );
-    _n = config.GetInt( "n" );
+void Hyperx::_ComputeSize( const Configuration &config )
+{
+  _k = config.GetInt( "k" );
+  _n = config.GetInt( "n" );
 
-    gK = _k; gN = _n;
-    _size     = powi( _k, _n );
-    _channels = 2*_n*_size;
+  gK = _k; gN = _n;
+  _size     = powi( _k, _n );
+  _channels = (_k-1)*_n*_size;
 
-    _nodes = _size;
+  _nodes = _size;
 
-    node_vectors = (int *) malloc(gN*_size*sizeof(int));
-  }
+  node_vectors = (int *) malloc(gN*_size*sizeof(int));
+}
 
-  void Hyperx::RegisterRoutingFunctions() {
+void Hyperx::RegisterRoutingFunctions() {
 
-  }
-  void Hyperx::_BuildNet( const Configuration &config )
-  {
-    int left_node;
-    int right_node;
 
-    int right_input;
-    int left_input;
+  gRoutingFunctionMap["adaptative_dor_exit_hyperx"] = &adaptative_dor_exit_hyperx;
 
-    int right_output;
-    int left_output;
 
-    int adj_nodes[_k];
-    int input_node[_k];
-    int output_node[_k];
+}
 
-    ostringstream router_name;
+void Hyperx::_BuildNet( const Configuration &config )
+{
 
-    //latency type, noc or conventional network
-    bool use_noc_latency;
-    use_noc_latency = (config.GetInt("use_noc_latency")==1);
+  int adj_nodes[_k-1];
+  int input_node[_k-1];
+  int output_node[_k-1];
 
-    for ( int node = 0; node < _size; ++node ) {
+  int latency = 1; //Esto igual se cambia en el futuro
 
-      router_name << "router";
+  ostringstream router_name;
 
-      if ( _k > 1 ) {
-        for ( int dim_offset = _size / _k; dim_offset >= 1; dim_offset /= _k ) {
-          router_name << "_" << ( node / dim_offset ) % _k;
+  //latency type, noc or conventional network
+  bool use_noc_latency;
+  use_noc_latency = (config.GetInt("use_noc_latency")==1);
+
+  for ( int node = 0; node < _size; ++node ) {
+
+    router_name << "router";
+
+    //_routers[node] = Router::NewRouter( config, this, router_name.str( ),node, 2*_n + 1, 2*_n + 1 );
+
+    _routers[node] = Router::NewRouter( config, this, router_name.str( ),node, (_k-1)*_n + 1, (_k-1)*_n + 1); //+1,pero en un futuro +c
+
+
+    _timed_modules.push_back(_routers[node]);
+
+    router_name.str("");
+
+    for ( int dim = 0; dim < _n; ++dim ) {
+
+      int salto  = powi( _k, dim );
+
+      node_vectors[node * gN + dim] = ( node / salto ) % _k; // % _k//aqui va el powi
+
+      int adj= node;
+      int chan_input= -1;
+      int chan_output = -1;
+
+      for(int counter = 0; counter < gK-1; ++counter){ //bucle para todas las adyacencias
+
+        if( ( (adj/ salto ) % _k ) == (_k-1) ){ //estamos en el borde
+
+          //Aqui habria que darle la vuelta al adj
+          adj = adj - (_k-1) * salto - salto; //el ultimo (- salto para dejarlo bien)
+          chan_input+= (-_k+1); //lo pongo apuntando al siguiente, puede ser negativo, va hacia atras
+          chan_output+= (-_k+1); //lo pongo apuntando al siguiente,  puede ser negativo, va hacia atras
+
         }
-      }
-
-      _routers[node] = Router::NewRouter( config, this, router_name.str( ),
-      node, 2*_n + 1, 2*_n + 1 );
-      _timed_modules.push_back(_routers[node]);
-
-      router_name.str("");
-
-      for ( int dim = 0; dim < _n; ++dim ) {
+        adj = (adj + salto);
+        chan_input+=1;
+        chan_output+=1;
 
 
-        node_vectors[node * gN + dim] = ( node / powi( _k, dim ) ) % _k; // % _k//aqui va el powi
+        adj_nodes[counter] = adj;
+        input_node[counter] = chan_input;
+        output_node[counter] = chan_output;
 
+        int channel = _getChannel(node, dim, chan_input);
 
-
-        //find the neighbor
-        left_node  = _LeftNode( node, dim );
-        right_node = _RightNode( node, dim );
-
-        //
-        // Current (N)ode
-        // (L)eft node
-        // (R)ight node
-        //
-        //   L--->N<---R
-        //   L<---N--->R
-        //
-
-        // torus channel is longer due to wrap around
-        //int latency = _mesh ? 1 : 2 ;
-        int latency = 1;
-
-        //get the input channel number
-        right_input = _LeftChannel( right_node, dim );
-        left_input  = _RightChannel( left_node, dim );
-
-        //add the input channel
-        _routers[node]->AddInputChannel( _chan[right_input], _chan_cred[right_input] );
-        _routers[node]->AddInputChannel( _chan[left_input], _chan_cred[left_input] );
-        //_routers[node]->AddInputChannel(_chan[right_input], _chan_cred[right_input], _chan_la[right_input]);
-        //_routers[node]->AddInputChannel(_chan[left_input], _chan_cred[left_input], _chan_la[left_input]);
-
-        // lo del chan_la es de ivan
-
-        //set input channel latency
+        //INPUT CHANNEL
+        _routers[node]->AddInputChannel( _chan[channel], _chan_cred[channel] );
 
         if(use_noc_latency){
-          _chan[right_input]->SetLatency( latency );
-          _chan[left_input]->SetLatency( latency );
-          _chan_cred[right_input]->SetLatency( latency );
-          _chan_cred[left_input]->SetLatency( latency );
+          _chan[channel]->SetLatency( latency );
+          _chan_cred[channel]->SetLatency( latency );
         } else {
-          _chan[left_input]->SetLatency( 1 );
-          _chan_cred[right_input]->SetLatency( 1 );
-          _chan_cred[left_input]->SetLatency( 1 );
-          _chan[right_input]->SetLatency( 1 );
+          _chan[channel]->SetLatency( 1 );
+          _chan_cred[channel]->SetLatency( 1 );
         }
 
-        //get the output channel number
-        right_output = _RightChannel( node, dim );
-        left_output  = _LeftChannel( node, dim );
-
-        //add the output channel
-        _routers[node]->AddOutputChannel( _chan[right_output], _chan_cred[right_output] );
-        _routers[node]->AddOutputChannel( _chan[left_output], _chan_cred[left_output] );
-        //_routers[node]->AddOutputChannel(_chan[right_output], _chan_cred[right_output], _chan_la[right_output]);
-        //_routers[node]->AddOutputChannel(_chan[left_output], _chan_cred[left_output], _chan_la[left_output]);
-
-        //set output channel latency
-        if(use_noc_latency){
-          _chan[right_output]->SetLatency( latency );
-          _chan[left_output]->SetLatency( latency );
-          _chan_cred[right_output]->SetLatency( latency );
-          _chan_cred[left_output]->SetLatency( latency );
-        } else {
-          _chan[right_output]->SetLatency( 1 );
-          _chan[left_output]->SetLatency( 1 );
-          _chan_cred[right_output]->SetLatency( 1 );
-          _chan_cred[left_output]->SetLatency( 1 );
-
-        }
-      }
-      //injection and ejection channel, always 1 latency
-      _routers[node]->AddInputChannel( _inject[node], _inject_cred[node] );
-      _routers[node]->AddOutputChannel( _eject[node], _eject_cred[node] );
-      _inject[node]->SetLatency( 1 );
-      _eject[node]->SetLatency( 1 );
-    }
-  }
-
-  void Hyperx::_BuildNet2( const Configuration &config )
-  {
-    int left_node;
-    int right_node;
-
-    int right_input;
-    int left_input;
-
-    int right_output;
-    int left_output;
-
-    int adj_nodes[_k-1];
-    int input_node[_k-1];
-    int output_node[_k-1];
-
-    ostringstream router_name;
-
-    //latency type, noc or conventional network
-    bool use_noc_latency;
-    use_noc_latency = (config.GetInt("use_noc_latency")==1);
-
-    for ( int node = 0; node < _size; ++node ) {
-
-      router_name << "router";
-
-      //_routers[node] = Router::NewRouter( config, this, router_name.str( ),node, 2*_n + 1, 2*_n + 1 );
-
-      _routers[node] = Router::NewRouter( config, this, router_name.str( ),node, (_k-1)*_n + c, (_k-1)*_n + c);
-
-
-      _timed_modules.push_back(_routers[node]);
-
-      router_name.str("");
-
-      for ( int dim = 0; dim < _n; ++dim ) {
-
-        int salto  = powi( _k, dim ) );
-
-        node_vectors[node * gN + dim] = ( node / salto ) % _k; // % _k//aqui va el powi
-
-        int adj= node;
-        int chan_input= -1;
-        int chan_output = -1;
-
-        for(int counter = 0; counter < k-1; ++counter){ //bucle para todas las adyacencias
-
-
-
-          if( ( (adj/ salto ) % _k ) == (_k-1) ){ //estamos en el borde
-
-            //Aqui habria que darle la vuelta al adj
-            adj = adj - (k-1) * salto - salto; //el ultimo (- salto para dejarlo bien)
-            chan_input+= (-k+1); //lo pongo apuntando al siguiente, puede ser negativo, va hacia atras
-            chan_output+= (-k+1); //lo pongo apuntando al siguiente,  puede ser negativo, va hacia atras
-
-          }
-            adj = (adj + salto)
-            chan_input+=1;
-            chan_output+=1;
-
-
-          adj_nodes[counter] = adj;
-          input_node[counter] = chan_input;
-          output_node[counter] = chan_output;
-
-        }
-
-        /** HYPERX CONSTRUCCIÓN TERMINADA HASTA AQUI. **/
-
-        int latency = 1;
-
-        //get the input channel number
-        right_input = _LeftChannel( right_node, dim );
-        left_input  = _RightChannel( left_node, dim );
-
-        //add the input channel
-        _routers[node]->AddInputChannel( _chan[right_input], _chan_cred[right_input] );
-        _routers[node]->AddInputChannel( _chan[left_input], _chan_cred[left_input] );
-
-
-        //set input channel latency
+        //OUTPUT CHANNEL
+        _routers[node]->AddOutputChannel( _chan[channel], _chan_cred[channel] );
 
         if(use_noc_latency){
-          _chan[right_input]->SetLatency( latency );
-          _chan[left_input]->SetLatency( latency );
-          _chan_cred[right_input]->SetLatency( latency );
-          _chan_cred[left_input]->SetLatency( latency );
+          _chan[channel]->SetLatency( latency );
+          _chan_cred[channel]->SetLatency( latency );
         } else {
-          _chan[left_input]->SetLatency( 1 );
-          _chan_cred[right_input]->SetLatency( 1 );
-          _chan_cred[left_input]->SetLatency( 1 );
-          _chan[right_input]->SetLatency( 1 );
+          _chan[channel]->SetLatency( 1 );
+          _chan_cred[channel]->SetLatency( 1 );
         }
 
-        //get the output channel number
-        right_output = _RightChannel( node, dim );
-        left_output  = _LeftChannel( node, dim );
-
-        //add the output channel
-        _routers[node]->AddOutputChannel( _chan[right_output], _chan_cred[right_output] );
-        _routers[node]->AddOutputChannel( _chan[left_output], _chan_cred[left_output] );
-        //_routers[node]->AddOutputChannel(_chan[right_output], _chan_cred[right_output], _chan_la[right_output]);
-        //_routers[node]->AddOutputChannel(_chan[left_output], _chan_cred[left_output], _chan_la[left_output]);
-
-        //set output channel latency
-        if(use_noc_latency){
-          _chan[right_output]->SetLatency( latency );
-          _chan[left_output]->SetLatency( latency );
-          _chan_cred[right_output]->SetLatency( latency );
-          _chan_cred[left_output]->SetLatency( latency );
-        } else {
-          _chan[right_output]->SetLatency( 1 );
-          _chan[left_output]->SetLatency( 1 );
-          _chan_cred[right_output]->SetLatency( 1 );
-          _chan_cred[left_output]->SetLatency( 1 );
-
-        }
-      }
-      //injection and ejection channel, always 1 latency
-      _routers[node]->AddInputChannel( _inject[node], _inject_cred[node] );
-      _routers[node]->AddOutputChannel( _eject[node], _eject_cred[node] );
-      _inject[node]->SetLatency( 1 );
-      _eject[node]->SetLatency( 1 );
-    }
-  }
-
-  int Hyperx::_LeftChannel(int node, int dim)
-  {
-    // The base channel for a node is 2*_n*node
-    int base = 2*_n*node;
-    // The offset for a left channel is 2*dim + 1
-    int off  = 2*dim + 1;
-
-    return ( base + off );
-  }
-
-  int Hyperx::_RightChannel(int node, int dim)
-  {
-    // The base channel for a node is 2*_n*node
-    int base = 2*_n*node;
-    // The offset for a right channel is 2*dim
-    int off  = 2*dim;
-    return ( base + off );
-  }
-
-  /*
-  * node: escalar del nodo al que vamos a poner el canal de input
-  * dim: dimension en la que se encuentra el canal
-  * offset: el desplazamiento respecto a node del canal que le vamos a poner dentro de la dimension
-  */
-  int Hyperx::_getChannel(int node, int dim, int offset)
-  {
-    // The base channel -- nos colocamos en el nodo
-    int base = (_k-1)*_n*node;
-
-    // The offset -- nos colocamos en la dimension dentro del nodo + offset
-    int off  = (_k-1)*dim + offset;
-
-    return ( base + off );
-  }
-
-
-  int Hyperx::_LeftNode(int node, int dim)
-  {
-    int k_to_dim = powi( _k, dim );
-    int loc_in_dim = ( node / k_to_dim ) % _k;
-    int left_node;
-    // if at the left edge of the dimension, wraparound
-    if ( loc_in_dim == 0 ) {
-      left_node = node + (_k-1)*k_to_dim;
-    } else {
-      left_node = node - k_to_dim;
-    }
-
-    return left_node;
-  }
-
-  int Hyperx::_RightNode(int node, int dim)
-  {
-    int k_to_dim = powi( _k, dim );
-    int loc_in_dim = ( node / k_to_dim ) % _k;
-    int right_node;
-    // if at the right edge of the dimension, wraparound
-    if ( loc_in_dim == ( _k-1 ) ) {
-      right_node = node - (_k-1)*k_to_dim;
-    } else {
-      right_node = node + k_to_dim;
-    }
-
-    return right_node;
-  }
-
-  int Hyperx::GetN() const
-  {
-    return _n;
-  }
-
-  int Hyperx::GetK() const
-  {
-    return _k;
-  }
-
-  /*legacy, not sure how this fits into the own scheme of things*/
-  void Hyperx::InsertRandomFaults(const Configuration &config)
-  {
-    int num_fails = config.GetInt("link_failures");
-
-    if ( _size && num_fails ) {
-      vector<long> save_x;
-      vector<double> save_u;
-      SaveRandomState( save_x, save_u );
-      int fail_seed;
-      if ( config.GetStr( "fail_seed" ) == "time" ) {
-        fail_seed = int( time( NULL ) );
-        cout << "SEED: fail_seed=" << fail_seed << endl;
-      } else {
-        fail_seed = config.GetInt( "fail_seed" );
-      }
-      RandomSeed( fail_seed );
-
-      vector<bool> fail_nodes(_size);
-
-      for ( int i = 0; i < _size; ++i ) {
-        int node = i;
-
-        // edge test
-        bool edge = false;
-        for ( int n = 0; n < _n; ++n ) {
-          if ( ( ( node % _k ) == 0 ) ||
-          ( ( node % _k ) == _k - 1 ) ) {
-            edge = true;
-          }
-          node /= _k;
-        }
-
-        if ( edge ) {
-          fail_nodes[i] = true;
-        } else {
-          fail_nodes[i] = false;
-        }
       }
 
-      for ( int i = 0; i < num_fails; ++i ) {
-        int j = RandomInt( _size - 1 );
-        bool available = false;
-        int node=0, chan=0;
-        int t;
+      /** HYPERX CONSTRUCCIÓN DE LA DIMENSION DE UN NODO HASTA AQUI. **/
 
-        for ( t = 0; ( t < _size ) && (!available); ++t ) {
-          node = ( j + t ) % _size;
-
-          if ( !fail_nodes[node] ) {
-            // check neighbors
-            int c = RandomInt( 2*_n - 1 );
-
-            for ( int n = 0; ( n < 2*_n ) && (!available); ++n ) {
-              chan = ( n + c ) % 2*_n;
-
-              if ( chan % 1 ) {
-                available = fail_nodes[_LeftNode( node, chan/2 )];
-              } else {
-                available = fail_nodes[_RightNode( node, chan/2 )];
-              }
-            }
-          }
-
-          if ( !available ) {
-            cout << "skipping " << node << endl;
-          }
-        }
-
-        if ( t == _size ) {
-          Error( "Could not find another possible fault channel" );
-        }
-
-
-        OutChannelFault( node, chan );
-        fail_nodes[node] = true;
-
-        for ( int n = 0; ( n < _n ) && available ; ++n ) {
-          fail_nodes[_LeftNode( node, n )]  = true;
-          fail_nodes[_RightNode( node, n )] = true;
-        }
-
-        cout << "failure at node " << node << ", channel "
-        << chan << endl;
-      }
-
-      RestoreRandomState( save_x, save_u );
     }
-  }
 
-  double Hyperx::Capacity( ) const
-  {
-    return (double)_k / ( _mesh ? 8.0 : 4.0 );
+    //injection and ejection channel, always 1 latency
+    _routers[node]->AddInputChannel( _inject[node], _inject_cred[node] );
+    _routers[node]->AddOutputChannel( _eject[node], _eject_cred[node] );
+    _inject[node]->SetLatency( 1 );
+    _eject[node]->SetLatency( 1 );
+
   }
-} // namespace Booksim
+}
+
+/*
+* node: escalar del nodo al que vamos a poner el canal de input
+* dim: dimension en la que se encuentra el canal
+* offset: el desplazamiento respecto a node del canal que le vamos a poner dentro de la dimension
+*/
+int Hyperx::_getChannel(int node, int dim, int offset)
+{
+  // The base channel -- nos colocamos en el nodo
+  int base = (_k-1)*_n*node;
+
+  // The offset -- nos colocamos en la dimension dentro del nodo + offset
+  int off  = (_k-1)*dim + offset;
+
+  return ( base + off );
+}
+
+
+int Hyperx::GetN() const
+{
+  return _n;
+}
+
+int Hyperx::GetK() const
+{
+  return _k;
+}
+
+/*legacy, not sure how this fits into the own scheme of things*/
+void Hyperx::InsertRandomFaults(const Configuration &config)
+{
+
+}
+
+double Hyperx::Capacity( ) const
+{
+  return (double)_k / ( _mesh ? 8.0 : 4.0 );
+}
+
+
+void adaptative_dor_exit_hyperx( const Router *r, const Flit *f, int in_channel,
+  OutputSet *outputs, bool inject )
+  {
+
+    int vcBegin = 0, vcEnd = gNumVCs-1;
+
+    int out_port;
+
+    if(inject) {
+
+      out_port = -1;
+
+    } else { //si no se inyecta
+
+      //printf("%d, end: %d \n", f->vc, vcEnd);
+
+
+    }
+
+
+    outputs->Clear( );
+
+    outputs->AddRange( out_port , vcBegin, vcEnd );
+  }
