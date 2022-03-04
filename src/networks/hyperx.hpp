@@ -59,7 +59,7 @@ public:
 
 };
 
-void adaptative_dor_exit_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
+void dor_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 
 
 #endif
