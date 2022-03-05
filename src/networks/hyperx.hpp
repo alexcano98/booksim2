@@ -52,7 +52,7 @@ public:
   int GetK( ) const;
 
 
-  double Capacity( ) const;
+//  double Capacity( ) const;
 
   void InsertRandomFaults( const Configuration &config );
 

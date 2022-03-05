@@ -58,7 +58,7 @@ void Hyperx::_ComputeSize( const Configuration &config )
 
   gK = _k; gN = _n;
   _size     = powi( _k, _n );
-  _channels = (_k)*_n*_size; //aqui puede se k-1, sin contar inyectores
+  _channels = (_k-1)*_n*_size; //sin contar inyectores
 
   _nodes = _size;
 
@@ -76,10 +76,6 @@ void Hyperx::RegisterRoutingFunctions() {
 void Hyperx::_BuildNet( const Configuration &config )
 {
 
-  int adj_nodes[_k-1];
-  int input_node[_k-1];
-  int output_node[_k-1];
-
   int latency = 1; //Esto igual se cambia en el futuro
 
   ostringstream router_name;
@@ -90,28 +86,25 @@ void Hyperx::_BuildNet( const Configuration &config )
 
   for ( int node = 0; node < _size; ++node ) {
 
-    router_name << "router";
-
-    //_routers[node] = Router::NewRouter( config, this, router_name.str( ),node, 2*_n + 1, 2*_n + 1 );
-
     _routers[node] = Router::NewRouter( config, this, router_name.str( ),node, (_k-1)*_n + 1, (_k-1)*_n + 1); //+1,pero en un futuro +c
-
-
     _timed_modules.push_back(_routers[node]);
-
     router_name.str("");
 
-    for ( int dim = 0; dim < _n; ++dim ) {
+    for ( int dim = 0; dim < _n; dim++ ) {
 
       int salto  = powi( _k, dim );
 
       node_vectors[node * gN + dim] = ( node / salto ) % _k; // % _k//aqui va el powi
 
-      int adj= node;
-      int chan_input= dim * (gK-1) -1;
-      int chan_output = dim * (gK-1) -1;
+      int adj_nodes[_k-1]; //debug
+      int input_node_channel[_k-1]; //debug
+      int output_node_channel[_k-1]; //debug
 
-      for(int counter = 0; counter < gK-1; ++counter){ //bucle para todas las adyacencias en una dimension de un nodo
+      int adj= node;
+      int chan_input= dim * (_k-1) + (_k-2);
+      int chan_output = dim * (_k-1);
+
+      for(int counter = 0; counter < _k-1; ++counter){ //bucle para todas las adyacencias en una dimension de un nodo
 
         if( ( (adj/ salto ) % _k ) == (_k-1) ){ //estamos en el borde
 
@@ -119,56 +112,64 @@ void Hyperx::_BuildNet( const Configuration &config )
           adj = adj - (_k-1) * salto - salto; //el ultimo (- salto para dejarlo bien)
           //chan_input+= (-_k+1); //lo pongo apuntando al siguiente, puede ser negativo, va hacia atras
           //chan_output+= (-_k+1); //lo pongo apuntando al siguiente,  puede ser negativo, va hacia atras
-
         }
-        adj = (adj + salto);
-        chan_input+=1;
-        chan_output+=1;
 
+        adj = (adj + salto);
+
+        /*if(node == 3 && dim == 1){
+          printf("%d, %d, %d \n",adj, _getChannel(adj, dim, chan_input), _getChannel(node, dim, chan_output) );
+          fflush(stdout);
+        }*/
 
         adj_nodes[counter] = adj;
-        input_node[counter] = chan_input;
-        output_node[counter] = chan_output;
 
-        int channel = _getChannel(node, dim, chan_input);
+        int channel_input = _getChannel(adj, dim, chan_input); //le sacamos el canal al nodo adyacente para llegar a nosotros
+        input_node_channel[counter] = channel_input;
 
         //INPUT CHANNEL
-        _routers[node]->AddInputChannel( _chan[channel], _chan_cred[channel] );
+        _routers[node]->AddInputChannel( _chan[channel_input], _chan_cred[channel_input] );
 
         if(use_noc_latency){
-          _chan[channel]->SetLatency( latency );
-          _chan_cred[channel]->SetLatency( latency );
+          _chan[channel_input]->SetLatency( latency );
+          _chan_cred[channel_input]->SetLatency( latency );
         } else {
-          _chan[channel]->SetLatency( 1 );
-          _chan_cred[channel]->SetLatency( 1 );
+          _chan[channel_input]->SetLatency( 1 );
+          _chan_cred[channel_input]->SetLatency( 1 );
         }
+
+
+        int channel_output = _getChannel(node, dim, chan_output);
+        output_node_channel[counter] = channel_output;
 
         //OUTPUT CHANNEL
-        _routers[node]->AddOutputChannel( _chan[channel], _chan_cred[channel] );
+        _routers[node]->AddOutputChannel( _chan[channel_output], _chan_cred[channel_output] );
 
         if(use_noc_latency){
-          _chan[channel]->SetLatency( latency );
-          _chan_cred[channel]->SetLatency( latency );
+          _chan[channel_output]->SetLatency( latency );
+          _chan_cred[channel_output]->SetLatency( latency );
         } else {
-          _chan[channel]->SetLatency( 1 );
-          _chan_cred[channel]->SetLatency( 1 );
+          _chan[channel_output]->SetLatency( 1 );
+          _chan_cred[channel_output]->SetLatency( 1 );
         }
 
-      }
+        chan_input = chan_input - 1;
+        chan_output = chan_output + 1;
+
+
+      } //fin ady dim node
 
       /** HYPERX CONSTRUCCIÓN DE LA DIMENSION DE UN NODO HASTA AQUI. **/
 
       //debug
 
-        printf("ID: %d, dimension: %d: ",_routers[node]->GetID(), dim);
-        for(int i = 0; i< gK-1; i++){
-          printf("(%d, %d, %d)  ",adj_nodes[i], output_node[i], _getChannel(node, dim, i));
-        }
-        printf("\n");
-        fflush(stdout);
+      printf("ID: %d, dimension: %d: ",_routers[node]->GetID(), dim);
+      for(int i = 0; i < _k-1; i++){
+        printf("(adj: %d, output: %d, input: %d)  ",adj_nodes[i], output_node_channel[i], input_node_channel[i]);
+      }
+      printf("\n");
+      fflush(stdout);
 
-
-    }
+    } //fin dim node
 
     //injection and ejection channel, always 1 latency
     _routers[node]->AddInputChannel( _inject[node], _inject_cred[node] );
@@ -176,16 +177,16 @@ void Hyperx::_BuildNet( const Configuration &config )
     _inject[node]->SetLatency( 1 );
     _eject[node]->SetLatency( 1 );
 
-  }
+  } //fin node
 
   //Empezamos el debug:
-
+  printf("\n ================================================================== \n");
   for ( int node = 0; node < _size; ++node ) {
 
     printf("ID: %d, inputs: %d, outputs: %d \n",_routers[node]->GetID(), _routers[node]->NumInputs(), _routers[node]->NumOutputs());
 
   }
-
+  printf("\n");
   fflush(stdout);
 
 
@@ -199,12 +200,12 @@ void Hyperx::_BuildNet( const Configuration &config )
 int Hyperx::_getChannel(int node, int dim, int offset)
 {
   // The base channel -- nos colocamos en el nodo
-  int base = (_k-1)*_n*node;
+  int base = (_k-1) * _n * node + offset;
 
   // The offset -- nos colocamos en la dimension dentro del nodo + offset
-  int off  = (_k-1)*dim + offset;
+  //int off  = (_k-1) + offset;
 
-  return ( base + off );
+  return base;
 }
 
 
@@ -224,10 +225,10 @@ void Hyperx::InsertRandomFaults(const Configuration &config)
 
 }
 
-double Hyperx::Capacity( ) const
+/*double Hyperx::Capacity( ) const
 {
-  return (double)_k / ( _mesh ? 8.0 : 4.0 );
-}
+return (double)_k / ( _mesh ? 8.0 : 4.0 );
+}*/
 
 
 void dor_hyperx( const Router *r, const Flit *f, int in_channel,
@@ -245,7 +246,10 @@ void dor_hyperx( const Router *r, const Flit *f, int in_channel,
       out_port = -1;
 
     } else if(nodo_destino == nodo_actual){
-      out_port = gN*(gK -1);
+
+      /*printf("salgo\n" );
+      fflush(stdout);*/
+      out_port = gN * (gK -1);
 
     }else{
 
@@ -253,19 +257,21 @@ void dor_hyperx( const Router *r, const Flit *f, int in_channel,
       int salida = 0;
       int i = 0;
 
-      for(i = 0; i< gN && salida == 0; i++){
+      for(i = 0; i< gN ; i++){
 
         salida = (node_vectors[nodo_destino * gN+i] - node_vectors[nodo_actual * gN+i] + gK) %gK;
 
+        if(salida != 0) break;
+
       }
-      i--; //cogemos el último
+
 
       //printf("salida: %d, i: %d \n", salida-1, i);
-      assert(salida != 0); //esto se puede cambiar
+      assert(salida != 0); //esto se puede cambiar, meter aqui la salida tmbn
 
       out_port = i *(gK-1) + salida - 1; //esto es lo normalizado.
 
-    //  printf("actual %d, destino %d, outport %d \n", nodo_actual, nodo_destino, out_port);
+      //  printf("actual %d, destino %d, outport %d \n", nodo_actual, nodo_destino, out_port);
       fflush(stdout);
     }
 
