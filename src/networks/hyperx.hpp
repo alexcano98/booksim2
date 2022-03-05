@@ -38,6 +38,7 @@ class Hyperx : public Network {
 
   int _k;
   int _n;
+  int _c ;
 
   void _ComputeSize( const Configuration &config );
   void _BuildNet( const Configuration &config );
@@ -55,6 +56,8 @@ public:
 //  double Capacity( ) const;
 
   void InsertRandomFaults( const Configuration &config );
+  int calculateRouter(int node);
+  int calculateExitPort(int node);
 
 
 };

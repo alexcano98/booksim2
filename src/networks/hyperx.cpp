@@ -55,12 +55,13 @@ void Hyperx::_ComputeSize( const Configuration &config )
 {
   _k = config.GetInt( "k" );
   _n = config.GetInt( "n" );
+  _c = config.GetInt( "c" );
 
-  gK = _k; gN = _n;
-  _size     = powi( _k, _n );
+  gC = _c;gK = _k; gN = _n;
+  _size     = powi( _k, _n ); //añado la _c para añadir los inyectores... * _c
   _channels = (_k-1)*_n*_size; //sin contar inyectores
 
-  _nodes = _size;
+  _nodes = _size * _c;
 
   node_vectors = (int *) malloc(gN*_size*sizeof(int));
 }
@@ -86,7 +87,7 @@ void Hyperx::_BuildNet( const Configuration &config )
 
   for ( int node = 0; node < _size; ++node ) {
 
-    _routers[node] = Router::NewRouter( config, this, router_name.str( ),node, (_k-1)*_n + 1, (_k-1)*_n + 1); //+1,pero en un futuro +c
+    _routers[node] = Router::NewRouter( config, this, router_name.str( ),node, (_k-1)*_n + _c, (_k-1)*_n + _c); //+1,pero en un futuro +c
     _timed_modules.push_back(_routers[node]);
     router_name.str("");
 
@@ -171,11 +172,14 @@ void Hyperx::_BuildNet( const Configuration &config )
 
     } //fin dim node
 
-    //injection and ejection channel, always 1 latency
-    _routers[node]->AddInputChannel( _inject[node], _inject_cred[node] );
-    _routers[node]->AddOutputChannel( _eject[node], _eject_cred[node] );
-    _inject[node]->SetLatency( 1 );
-    _eject[node]->SetLatency( 1 );
+    for(int i = 0; i< _c; i++){
+      int link = (node * _c) +i;
+      //injection and ejection channel, always 1 latency
+      _routers[node]->AddInputChannel( _inject[link], _inject_cred[link] );
+      _routers[node]->AddOutputChannel( _eject[link], _eject_cred[link] );
+      _inject[link]->SetLatency( 1 );
+      _eject[link]->SetLatency( 1 );
+    }
 
   } //fin node
 
@@ -231,6 +235,15 @@ return (double)_k / ( _mesh ? 8.0 : 4.0 );
 }*/
 
 
+int calculateRouter(int node){
+  return node/gC;
+}
+
+int calculateExitPort(int node){
+  return node%gC;
+}
+
+
 void dor_hyperx( const Router *r, const Flit *f, int in_channel,
   OutputSet *outputs, bool inject )
   {
@@ -240,7 +253,7 @@ void dor_hyperx( const Router *r, const Flit *f, int in_channel,
     int out_port;
 
     int nodo_actual = r->GetID();
-    int nodo_destino = f->dest;
+    int nodo_destino = calculateRouter(f->dest);
     if(inject) {
 
       out_port = -1;
@@ -249,7 +262,7 @@ void dor_hyperx( const Router *r, const Flit *f, int in_channel,
 
       /*printf("salgo\n" );
       fflush(stdout);*/
-      out_port = gN * (gK -1);
+      out_port = gN * (gK -1) + calculateExitPort(f->dest);
 
     }else{
 
