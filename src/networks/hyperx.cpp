@@ -68,10 +68,9 @@ void Hyperx::_ComputeSize( const Configuration &config )
 
 void Hyperx::RegisterRoutingFunctions() {
 
-
   gRoutingFunctionMap["dor_hyperx"] = &dor_hyperx;
-    gRoutingFunctionMap["adaptive_xyyx_hyperx"] = &adaptive_xyyx_hyperx;
-
+  gRoutingFunctionMap["adaptive_xyyx_hyperx"] = &adaptive_xyyx_hyperx;
+  gRoutingFunctionMap["adaptive_dor_escape_hyperx"] = &adaptive_dor_escape_hyperx;
 
 }
 
@@ -359,3 +358,71 @@ void dor_hyperx( const Router *r, const Flit *f, int in_channel,
 
       outputs->AddRange( out_port , vcBegin, vcEnd );
     }
+
+
+
+      void adaptive_dor_escape_hyperx( const Router *r, const Flit *f, int in_channel,
+        OutputSet *outputs, bool inject )
+        {
+
+          int vcBegin = 0, vcEnd = gNumVCs-2; //quitamos el último canal
+          bool es_dor = f->vc == gNumVCs-1;
+
+          int out_port = -1;
+
+          int nodo_actual = r->GetID();
+          int nodo_destino = calculateRouter(f->dest);
+
+          if(inject) {
+
+            out_port = -1;
+
+          } else if(nodo_destino == nodo_actual){
+
+            out_port = gN * (gK -1) + calculateExitPort(f->dest);
+
+          }else{
+
+            int dimension_salida = -1;
+            int flits_disponibles = -1;
+            vector<int> creditos = r->FreeCredits();
+
+            for(int i = 0; i< gN ; i++){
+
+              int salida = (node_vectors[nodo_destino * gN+i] - node_vectors[nodo_actual * gN+i] + gK) %gK;
+
+              if(salida != 0){ //Si hay que recorrer esta salida...
+
+                int sitios_libres = 0;
+                for(int canal = 0; canal < (gNumVCs -1); canal++){
+                  sitios_libres += creditos[i*gNumVCs + canal];
+                }
+
+                if(sitios_libres > flits_disponibles){ //es DOR ante empates a 0 flits...
+                  flits_disponibles = sitios_libres;
+                  dimension_salida = i;
+                  out_port = i *(gK-1) + salida - 1; //esto es lo normalizado.
+
+                  if(es_dor) break; //Entramos a la primera solo
+                }
+
+
+
+              }
+
+            }
+
+            assert(out_port != -1); //no deberia ser...
+
+            if(flits_disponibles == 0 || es_dor){ //inyeccion
+              vcEnd++;
+              vcBegin = vcEnd;
+            }
+
+          }
+
+
+          outputs->Clear( );
+
+          outputs->AddRange( out_port , vcBegin, vcEnd );
+        }
