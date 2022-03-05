@@ -38,7 +38,7 @@ class Hyperx : public Network {
 
   int _k;
   int _n;
-  int _c ;
+  int _c;
 
   void _ComputeSize( const Configuration &config );
   void _BuildNet( const Configuration &config );
@@ -63,6 +63,7 @@ public:
 };
 
 void dor_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
+void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 
 
 #endif
