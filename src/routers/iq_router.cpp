@@ -2278,13 +2278,6 @@ IQRouter::IQRouter( Configuration const & config, Module *parent,
 															// misc.
 															//------------------------------------------------------------------------------
 
-															int IQRouter::GetFreeCreditVC(int o, int vc) const
-															{
-																assert((o >= 0) && (o < _outputs));
-																BufferState const * const dest_buf = _next_buf[o];
-																return dest_buf->AvailableFor(vc);
-															}
-
 
 															void IQRouter::Display( ostream & os ) const
 															{

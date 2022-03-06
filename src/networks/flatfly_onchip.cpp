@@ -364,6 +364,7 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
 
         int credit_xy = r->GetUsedCredit(out_port_xy);
         int credit_yx = r->GetUsedCredit(out_port_yx);
+
         bool x_then_y;
         if(credit_xy > credit_yx) {
           x_then_y = false;
@@ -382,7 +383,7 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
         }
 
         if(in_channel < gC){ //ESTO SOLO VALE PARA DOS DIMENSIONES....
-          vcEnd = vcBegin + available_vcs;
+          vcEnd = vcBegin + available_vcs -1;
           vcBegin = vcBegin;
 
         }else{
@@ -443,9 +444,12 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
           int credit_xy = 0;
           int credit_yx = 0;
 
+          vector<int> creditos = r->FreeCredits();
+
           for(int i = vcBegin; i<= vcEnd; i++){
-            credit_xy += r->GetFreeCreditVC(out_port_xy, i);
-            credit_yx += r->GetFreeCreditVC(out_port_yx, i);
+
+            credit_xy += creditos[out_port_xy + i];
+            credit_yx += creditos[out_port_yx * (gNumVCs-1) +i];
           }
           //GetBufferOccupancy(int i)
 

@@ -165,7 +165,6 @@ public:
 
   virtual int GetUsedCredit(int o) const;
   virtual int GetBufferOccupancy(int i) const;
-  virtual int GetFreeCreditVC(int o, int vc) const;
 
 #ifdef TRACK_BUFFERS
   virtual int GetUsedCreditForClass(int output, int cl) const;

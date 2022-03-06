@@ -116,7 +116,6 @@ public:
 
   virtual int GetUsedCredit(int out) const {return 0;}
   virtual int GetBufferOccupancy(int i) const {return 0;}
-  virtual int GetFreeCreditVC(int o, int vc) const {return 0;} //esto lo añado asi, no voy a usar este router
 
 #ifdef TRACK_BUFFERS
   virtual int GetUsedCreditForClass(int output, int cl) const {return 0;}
