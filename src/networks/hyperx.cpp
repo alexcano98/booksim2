@@ -400,8 +400,11 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
       } else if(nodo_destino == nodo_actual){
 
         out_port = gN * (gK -1) + calculateExitPort(f->dest);
-        vcEnd++;
-        vcBegin = vcEnd;
+
+        if(es_dor){ //inyeccion
+          vcEnd++;
+          vcBegin = vcEnd;
+        }
 
       }else{
 
