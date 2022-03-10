@@ -482,11 +482,11 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
           if ( in_channel >= (gK-1)*gN ){
             f->ph = 0;
-            f->intm = RandomInt( powi( gK, gN )*gC-1);
+            f->intm = RandomInt( powi( gK, gN ));
           }
 
           int nodo_actual = r->GetID();
-          int nodo_intermedio = calculateRouter(f->intm);
+          int nodo_intermedio = f->intm;
           int nodo_destino = calculateRouter(f->dest); //aqui sacamos todos los routers de la red.
 
           if(nodo_intermedio == nodo_actual|| nodo_destino== nodo_actual){
