@@ -58,6 +58,7 @@ public:
   void InsertRandomFaults( const Configuration &config );
   int calculateRouter(int node);
   int calculateExitPort(int node);
+  int calculateDOR(int nodo_destino, int nodo_actual);
 
 
 };
@@ -65,6 +66,7 @@ public:
 void dor_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void adaptive_dor_escape_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
+void valiant_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 
 
 #endif
