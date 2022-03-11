@@ -31,7 +31,10 @@ def main():
     sim_out = "sim_out.csv"
     cycles = "cycles.csv"
     run_time = "run_time.csv"
+    topology  = sys.argv[2]
 
+    if topology == "":
+        exit(1)
 
     # check if the output directory exists
     if not os.path.exists(out_dir):
@@ -120,7 +123,7 @@ def main():
         plt.xticks(np.arange(0, 1.1, 0.1))
         plt.grid()
         #plt.show()
-        plt.savefig('./plots/flits_latency_'+t+'.png')
+        plt.savefig('./plots/'+topology+'_flits_latency_'+t+'.png')
         print("Flits latency plot created")
 
 
@@ -133,7 +136,7 @@ def main():
         plt.yticks(np.arange(0, 1.1, 0.1))
         plt.grid()
         #plt.show()
-        plt.savefig('./plots/throughput_'+t+'.png')
+        plt.savefig('./plots/'+topology+'_throughput_'+t+'.png')
         print("Throughput plot created")
 
         os.chdir("../") # volvemos atras
