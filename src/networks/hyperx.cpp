@@ -70,7 +70,7 @@ void Hyperx::RegisterRoutingFunctions() {
 
   gRoutingFunctionMap["dor_hyperx"] = &dor_hyperx;
   gRoutingFunctionMap["adaptive_xyyx_hyperx"] = &adaptive_xyyx_hyperx;
-  gRoutingFunctionMap["adaptive_dor_escape_hyperx"] = &adaptive_dor_escape_hyperx;
+  gRoutingFunctionMap["adaptive_dor_exit_hyperx"] = &adaptive_dor_exit_hyperx;
   gRoutingFunctionMap["valiant_hyperx"] = &valiant_hyperx;
 
 }
@@ -255,6 +255,9 @@ int calculateDOR(int nodo_destino, int nodo_actual){
     if(salida != 0) break;
 
   }
+
+  //printf("%d, %d\n", nodo_destino,nodo_actual);
+  //fflush(stdout);
   assert(salida != 0); //esto se puede cambiar, meter aqui la salida tmbn
 
   return i *(gK-1) + salida - 1; //esto es lo normalizado.
@@ -349,6 +352,7 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
         if(salida != 0){ //Si hay que recorrer esta salida...
 
           int sitios_libres = 0;
+          int puerto = i *(gK-1) + salida - 1;
           for(int canal = 0; canal <gNumVCs; canal++){
             sitios_libres += creditos[i*gNumVCs + canal];
           }
@@ -356,7 +360,7 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
           if(sitios_libres > flits_disponibles){
             flits_disponibles = sitios_libres;
             dimension_salida = i;
-            out_port = i *(gK-1) + salida - 1; //esto es lo normalizado.
+            out_port = puerto; //esto es lo normalizado.
           }
 
         }
@@ -381,7 +385,7 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
 
 
-  void adaptive_dor_escape_hyperx( const Router *r, const Flit *f, int in_channel,
+  void adaptive_dor_exit_hyperx( const Router *r, const Flit *f, int in_channel,
     OutputSet *outputs, bool inject )
     {
 
@@ -401,16 +405,12 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
         out_port = gN * (gK -1) + calculateExitPort(f->dest);
 
-        if(es_dor){ //inyeccion
-          vcEnd++;
-          vcBegin = vcEnd;
-        }
 
       }else{
 
         int dimension_salida = -1;
         int flits_disponibles = -1;
-        vector<int> creditos = r->FreeCredits();
+
 
         for(int i = 0; i< gN ; i++){
 
@@ -419,14 +419,18 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
           if(salida != 0){ //Si hay que recorrer esta salida...
 
             int sitios_libres = 0;
+            int puerto = i *(gK-1) + salida - 1;
+            vector<int> creditos = r->FreeCredits();
+
             for(int canal = 0; canal < (gNumVCs -1); canal++){
-              sitios_libres += creditos[i*gNumVCs + canal];
+              sitios_libres += creditos[puerto * gNumVCs + canal];
             }
 
             if(sitios_libres > flits_disponibles){ //es DOR ante empates a 0 flits...
+
               flits_disponibles = sitios_libres;
               dimension_salida = i;
-              out_port = i *(gK-1) + salida - 1; //esto es lo normalizado.
+              out_port = puerto; //esto es lo normalizado.
 
               if(es_dor) break; //Entramos a la primera solo
             }
@@ -437,7 +441,7 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
         assert(out_port != -1); //no deberia ser...
 
-        if(flits_disponibles == 0 || es_dor){ //inyeccion
+        if(flits_disponibles <= 0 || es_dor){ //inyeccion
           vcEnd++;
           vcBegin = vcEnd;
         }
@@ -482,14 +486,14 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
           if ( in_channel >= (gK-1)*gN ){
             f->ph = 0;
-            f->intm = RandomInt( powi( gK, gN ));
+            f->intm = RandomInt( powi( gK, gN ) -1); //apuntamos a un router de la red... es mas comodo.
           }
 
           int nodo_actual = r->GetID();
           int nodo_intermedio = f->intm;
           int nodo_destino = calculateRouter(f->dest); //aqui sacamos todos los routers de la red.
 
-          if(nodo_intermedio == nodo_actual|| nodo_destino== nodo_actual){
+          if(nodo_intermedio == nodo_actual || nodo_destino== nodo_actual){
             f->ph = 1;
           }
 
@@ -508,9 +512,8 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
               vcBegin += available_vcs;
             }
 
-
           }else{
-            out_port = gN * (gK -1) + calculateExitPort(f->dest); //sacamos el destino exacto
+            out_port = gN * (gK -1) + calculateExitPort(f->dest); //sacamos el outpor exacto
             assert(f->ph == 1);
             vcBegin += available_vcs;
           }
@@ -521,3 +524,201 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
         outputs->AddRange( out_port , vcBegin, vcEnd );
       }
+
+
+  /*    //same as ugal except uses xyyx routing
+      void ugal_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
+        OutputSet *outputs, bool inject )
+        {
+          // ( Traffic Class , Routing Order ) -> Virtual Channel Range
+          int vcBegin = 0, vcEnd = gNumVCs-1;
+          if ( f->type == Flit::READ_REQUEST ) {
+            vcBegin = gReadReqBeginVC;
+            vcEnd = gReadReqEndVC;
+          } else if ( f->type == Flit::WRITE_REQUEST ) {
+            vcBegin = gWriteReqBeginVC;
+            vcEnd = gWriteReqEndVC;
+          } else if ( f->type ==  Flit::READ_REPLY ) {
+            vcBegin = gReadReplyBeginVC;
+            vcEnd = gReadReplyEndVC;
+          } else if ( f->type ==  Flit::WRITE_REPLY ) {
+            vcBegin = gWriteReplyBeginVC;
+            vcEnd = gWriteReplyEndVC;
+          }
+          assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
+
+          int out_port;
+
+          if(inject) {
+
+            out_port = -1;
+
+          } else {
+
+            int dest  = flatfly_transformation(f->dest);
+
+            int rID =  r->GetID();
+            int _concentration = gC;
+            int found;
+            int debug = 0;
+            int tmp_out_port, _ran_intm;
+            int _min_hop, _nonmin_hop, _min_queucnt, _nonmin_queucnt;
+            int threshold = 2;
+
+
+            if ( in_channel < gC ){ //ESTO ESTA MAL, ESTA VIEJO
+              if(gTrace){
+                cout<<"New Flit "<<f->src<<endl;
+              }
+              f->ph   = 0;
+            }
+
+            if(gTrace){
+              int load = 0;
+              cout<<"Router "<<rID<<endl;
+              cout<<"Input Channel "<<in_channel<<endl;
+              //need to modify router to report the buffere depth
+              load +=r->GetBufferOccupancy(in_channel);
+              cout<<"Rload "<<load<<endl;
+            }
+
+            if (debug){
+              cout << " FLIT ID: " << f->id << " Router: " << rID << " routing from src : " << f->src <<  " to dest : " << dest << " f->ph: " <<f->ph << " intm: " << f->intm <<  endl;
+            }
+            // f->ph == 0  ==> make initial global adaptive decision
+            // f->ph == 1  ==> route nonminimaly to random intermediate node
+            // f->ph == 2  ==> route minimally to destination
+
+            found = 0;
+
+            if (f->ph == 1){
+              dest = f->intm;
+            }
+
+            if (dest >= rID*_concentration && dest < (rID+1)*_concentration) { //LLEGA A UN NODO DESTINO, PERO LA CONDICION ES BASURA
+              if (f->ph == 1) {
+                f->ph = 2;
+                dest = flatfly_transformation(f->dest);
+                if (debug)   cout << "      done routing to intermediate ";
+              }
+              else  {
+                found = 1;
+                out_port = dest % gC;
+                if (debug)   cout << "      final routing to destination ";
+              }
+            }
+
+            if (!found) { //SI NO SE HA LLEGAO AL FINAL
+
+              int const xy_available_vcs = (vcEnd - vcBegin + 1) / 2;
+              assert(xy_available_vcs > 0);
+
+              // randomly select dimension order at first hop
+              bool x_then_y = ((in_channel < gC) ?
+              (RandomInt(1) > 0) :
+              (f->vc < (vcBegin + xy_available_vcs)));
+
+              if (f->ph == 0) {
+                //find the min port and min distance
+                _min_hop = find_distance(flatfly_transformation(f->src),dest);
+                if(x_then_y){
+                  tmp_out_port =  flatfly_outport(dest, rID);
+                } else {
+                  tmp_out_port =  flatfly_outport_yx(dest, rID);
+                }
+                if (f->watch){
+                  cout << " MIN tmp_out_port: " << tmp_out_port;
+                }
+                //sum over all vcs of that port
+                _min_queucnt =   r->GetUsedCredit(tmp_out_port);
+
+                //find the nonmin router, nonmin port, nonmin count
+                _ran_intm = find_ran_intm(flatfly_transformation(f->src), dest);
+                _nonmin_hop = find_distance(flatfly_transformation(f->src),_ran_intm) +    find_distance(_ran_intm, dest);
+                if(x_then_y){
+                  tmp_out_port =  flatfly_outport(_ran_intm, rID);
+                } else {
+                  tmp_out_port =  flatfly_outport_yx(_ran_intm, rID);
+                }
+
+                if (f->watch){
+                  cout << " NONMIN tmp_out_port: " << tmp_out_port << endl;
+                }
+                if (_ran_intm >= rID*_concentration && _ran_intm < (rID+1)*_concentration) {
+                  _nonmin_queucnt = numeric_limits<int>::max();
+                } else  {
+                  _nonmin_queucnt =   r->GetUsedCredit(tmp_out_port);
+                }
+
+                if (debug){
+                  cout << " _min_hop " << _min_hop << " _min_queucnt: " <<_min_queucnt << " _nonmin_hop: " << _nonmin_hop << " _nonmin_queucnt :" << _nonmin_queucnt <<  endl;
+                }
+
+                if (_min_hop * _min_queucnt   <= _nonmin_hop * _nonmin_queucnt +threshold) {
+
+                  if (debug) cout << " Route MINIMALLY " << endl;
+                  f->ph = 2;
+                } else {
+                  // route non-minimally
+                  if (debug)  { cout << " Route NONMINIMALLY int node: " <<_ran_intm << endl; }
+                  f->ph = 1;
+                  f->intm = _ran_intm;
+                  dest = f->intm;
+                  if (dest >= rID*_concentration && dest < (rID+1)*_concentration) {
+                    f->ph = 2;
+                    dest = flatfly_transformation(f->dest);
+                  }
+                }
+              }
+
+              //dest here should be == intm if ph==1, or dest == dest if ph == 2
+              if(x_then_y){
+                out_port =  flatfly_outport(dest, rID);
+                if(out_port >= gC) {
+                  vcEnd -= xy_available_vcs;
+                }
+              } else {
+                out_port =  flatfly_outport_yx(dest, rID);
+                if(out_port >= gC) {
+                  vcBegin += xy_available_vcs;
+                }
+              }
+
+              // if we haven't reached our destination, restrict VCs appropriately to avoid routing deadlock
+              if(out_port >= gC) {
+
+                int const ph_available_vcs = xy_available_vcs / 2;
+                assert(ph_available_vcs > 0);
+
+                if(f->ph == 1) {
+                  vcEnd -= ph_available_vcs;
+                } else {
+                  assert(f->ph == 2);
+                  vcBegin += ph_available_vcs;
+                }
+              }
+
+              found = 1;
+            }
+
+            if (!found) {
+              cout << " ERROR: output not found in routing. " << endl;
+              cout << *f; exit (-1);
+            }
+
+            if (out_port >= gN*(gK-1) + gC)  {
+              cout << " ERROR: output port too big! " << endl;
+              cout << " OUTPUT select: " << out_port << endl;
+              cout << " router radix: " <<  gN*(gK-1) + gK << endl;
+              exit (-1);
+            }
+
+            if (debug) cout << "        through output port : " << out_port << endl;
+            if(gTrace){cout<<"Outport "<<out_port<<endl;cout<<"Stop Mark"<<endl;}
+
+          }
+
+          outputs->Clear( );
+
+          outputs->AddRange( out_port , vcBegin, vcEnd );
+        }*/

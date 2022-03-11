@@ -30,7 +30,7 @@
 
 // Flow control
 // Total number of VCs must match the above assignments
-num_vcs     = 4;
+num_vcs     = 2;
 //vc_buf_size = 4;
 latency_thres = 10000000.0;
 
@@ -49,9 +49,9 @@ use_noc_latency = 0;
 topology = hyperx;
 subnets = 1;
 
-c  = 3;
-k  = 3;
-n  = 3;
+c  = 4;
+k  = 4;
+n  = 2;
 
 
 //x = 4;
@@ -65,7 +65,7 @@ n  = 3;
 // Routing
 //
 
-routing_function =adaptive_dor_escape;
+routing_function =dor;
 
 //for injection mode
 injection_rate = 0.95;

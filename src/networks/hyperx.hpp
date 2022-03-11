@@ -65,8 +65,9 @@ public:
 
 void dor_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
-void adaptive_dor_escape_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
+void adaptive_dor_exit_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void valiant_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
+void ugal_xyyx_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 
 
 #endif
