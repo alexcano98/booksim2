@@ -328,7 +328,7 @@ void FlatFlyOnChip::RegisterRoutingFunctions(){
 
   //funciones implementadas por mi
   gRoutingFunctionMap["minimal_ladder_adaptive_flatfly"] = &minimal_ladder_adaptive_flatfly;
-  gRoutingFunctionMap["adaptative_dor_exit_flatfly"] = &adaptative_dor_exit_flatfly;
+  gRoutingFunctionMap["adaptive_dor_exit_flatfly"] = &adaptative_dor_exit_flatfly;
 }
 
 //num_vcs == diameter of the network

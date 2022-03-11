@@ -58,7 +58,7 @@ def main():
         exit(1)
     # Read routings from file as a float separated by space
     with open(out_dir + "/routings", "r") as f:
-        routings = [float(x) for x in f.read().split()]
+        routings = [x for x in f.read().split()]
     print("routings ", routings)
 
 
@@ -68,39 +68,80 @@ def main():
         exit(1)
     # Read traffics from file as a float separated by space
     with open(out_dir + "/traffics", "r") as f:
-        traffics = [float(x) for x in f.read().split()]
+        traffics = [x for x in f.read().split()]
     print("traffics: ", traffics)
 
 
+    flits_latency_list = {'injected_rate': injected_rate}
+    accepted_flits_list = {'injected_rate': injected_rate}
+    traffic_pattern_list = {'injected_rate': injected_rate}
+
+    os.chdir(out_dir)
     for t in traffics:
 
         # move to output directory
-        os.chdir(out_dir+t)
+        os.chdir(t)
 
-        # check if csv files exist
-        if not os.path.exists(sim_out):
-            print("Error: sim_out.csv does not exist")
-            exit(1)
+        for routing in routings:
+            # check if csv files exist
+            if not os.path.exists(routing + "_" +sim_out):
+                print("Error: sim_out.csv does not exist")
+                exit(1)
 
-        if not os.path.exists(cycles):
-            print("Error: cycles.csv does not exist")
-            exit(1)
-        if not os.path.exists(run_time):
-            print("Error: run_time.csv does not exist")
-            exit(1)
+            if not os.path.exists(routing + "_" +cycles):
+                print("Error: cycles.csv does not exist")
+                exit(1)
+            if not os.path.exists(routing + "_" +run_time):
+                print("Error: run_time.csv does not exist")
+                exit(1)
 
 
-        # create plots directory
-        print("Creating plots directory...")
-        if not os.path.exists('plots'):
-            os.makedirs('plots')
+            # create plots directory
+            print("Creating plots directory...")
+            if not os.path.exists('plots'):
+                os.makedirs('plots')
 
-        df_sim = pd.read_csv(sim_out, sep=',', header=None)
-        flits_latency = df_sim[F_LAT]
-        accepted_flits = df_sim[F_ACC]
-        traffic_pattern = df_sim[1][0]
+            df_sim = pd.read_csv(routing + "_" +sim_out, sep=',', header=None)
+            flits_latency = df_sim[F_LAT]
+            accepted_flits = df_sim[F_ACC]
+            traffic_pattern = df_sim[1][0]
 
-        
+            flits_latency_list[routing] = flits_latency
+            accepted_flits_list[routing] = accepted_flits
+            traffic_pattern_list[routing] = traffic_pattern
+
+
+
+        data = pd.DataFrame(flits_latency_list)
+        data.plot(x='injected_rate', y=routings, legend=True, title='Flits latency')
+        plt.ylabel('Latency (cycles)')
+        plt.xlabel('Injected rate (Flits/cycle/node)')
+        plt.title('Flits latency (cycles) [TP={}]'.format(traffic_pattern))
+        plt.xticks(np.arange(0, 1.1, 0.1))
+        plt.grid()
+        #plt.show()
+        plt.savefig('./plots/flits_latency_'+t+'.png')
+        print("Flits latency plot created")
+
+
+        data = pd.DataFrame(accepted_flits_list)
+        data.plot(x='injected_rate', y=routings, legend=True, title='Flits latency')
+        plt.ylabel('Accepted flits')
+        plt.xlabel('Injected Rate (Flits/cycle/node)')
+        plt.title('Throughput [TP={}]'.format(traffic_pattern))
+        plt.xticks(np.arange(0, 1.1, 0.1))
+        plt.yticks(np.arange(0, 1.1, 0.1))
+        plt.grid()
+        #plt.show()
+        plt.savefig('./plots/throughput_'+t+'.png')
+        print("Throughput plot created")
+
+        os.chdir("../") # volvemos atras
+
+
+
+
+        """
         x = pd.DataFrame({'injected_rate': injected_rate, 'flits_latency': flits_latency, 'accepted_flits': accepted_flits})
         x.plot(x='injected_rate', y='flits_latency', marker="o", kind='line', color='red', label='flits_latency', legend=True, title='Flits latency')
         plt.ylabel('Latency (cycles)')
@@ -142,6 +183,7 @@ def main():
         plt.grid()
         plt.savefig('./plots/run_time.png')
         print("Run time plot created")
+        """
 
     # Add usage message
 if __name__ == "__main__":
