@@ -69,7 +69,7 @@ routing_function =adaptive_dor_exit;
 
 //for injection mode
 injection_rate = 1.0;
-traffic = uniform;
+traffic = transpose;
 //classes = 4;
 
 //latency: drains all packet, throughput:no drain?

@@ -353,8 +353,9 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
           int sitios_libres = 0;
           int puerto = i *(gK-1) + salida - 1;
+
           for(int canal = 0; canal <gNumVCs; canal++){
-            sitios_libres += creditos[i*gNumVCs + canal];
+            sitios_libres += creditos[puerto*gNumVCs + canal];
           }
 
           if(sitios_libres > flits_disponibles){
@@ -423,7 +424,7 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
             vector<int> creditos = r->FreeCredits();
 
             for(int canal = 0; canal < (gNumVCs -1); canal++){
-              sitios_libres += creditos[puerto * gNumVCs + canal];
+              sitios_libres += creditos[puerto * (gNumVCs) + canal];
             }
 
             if(sitios_libres > flits_disponibles){ //es DOR ante empates a 0 flits...
@@ -432,7 +433,7 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
               dimension_salida = i;
               out_port = puerto; //esto es lo normalizado.
 
-              if(es_dor) break; //Entramos a la primera solo
+              break; //Entramos a la primera solo
             }
 
           }

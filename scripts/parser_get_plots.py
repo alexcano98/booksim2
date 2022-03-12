@@ -190,7 +190,7 @@ def main():
 
     # Add usage message
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 3:
         print("Usage: python parser_2.py <output_directory>")
         exit(1)
     main()

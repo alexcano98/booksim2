@@ -3,7 +3,7 @@ num_vcs     = 2;
 latency_thres = 10000000.0;
 
 topology = flatfly;
-sim_type = latency;
+
 injection_rate_uses_flits = 1;
 use_noc_latency = 0;
 
@@ -17,11 +17,6 @@ y = 4;
 xr = 2;
 yr = 2;
 
-routing_function =dor;
-
-
-injection_rate = 0.5;
-traffic = uniform;
 
 sample_period = 100;
 warmup_periods = 200;
@@ -32,3 +27,11 @@ input_speedup = 4;
 output_speedup = 4;
 internal_speedup = 1.5;
 print_csv_results = 1;
+
+
+
+routing_function =dor;
+sim_type = latency;
+
+injection_rate = 0.5;
+traffic = uniform;
