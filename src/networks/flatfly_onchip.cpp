@@ -397,20 +397,6 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
     {
 
       int vcBegin = 0, vcEnd = gNumVCs-1;
-    /*  if ( f->type == Flit::READ_REQUEST ) {
-        vcBegin = gReadReqBeginVC;
-        vcEnd = gReadReqEndVC;
-      } else if ( f->type == Flit::WRITE_REQUEST ) {
-        vcBegin = gWriteReqBeginVC;
-        vcEnd = gWriteReqEndVC;
-      } else if ( f->type ==  Flit::READ_REPLY ) {
-        vcBegin = gReadReplyBeginVC;
-        vcEnd = gReadReplyEndVC;
-      } else if ( f->type ==  Flit::WRITE_REPLY ) {
-        vcBegin = gWriteReplyBeginVC;
-        vcEnd = gWriteReplyEndVC;
-      }
-      assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));*/
 
 
       int out_port;
@@ -459,9 +445,9 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
           //GetBufferOccupancy(int i)
 
 
-          if(credit_xy > 0 ) { //primero con orden en xy
+          if(credit_xy > 1 ) { //primero con orden en xy
             out_port = out_port_xy;
-          } else if(credit_yx > 0 ) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
+          } else if(credit_yx > 1 ) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
             out_port = out_port_yx;
           } else{ //canal de escape DOR. -> xy
             out_port = out_port_xy;

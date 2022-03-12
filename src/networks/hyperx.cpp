@@ -390,9 +390,7 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
     OutputSet *outputs, bool inject )
     {
 
-      int vcBegin = 0, vcEnd = gNumVCs-2; //quitamos el último canal
-      bool es_dor = f->vc == gNumVCs-1;
-
+      int vcBegin = 0, vcEnd = gNumVCs-1; //quitamos el último canal
       int out_port = -1;
 
       int nodo_actual = r->GetID();
@@ -406,12 +404,16 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
         out_port = gN * (gK -1) + calculateExitPort(f->dest);
 
+      }else if(f->vc == vcEnd){
+
+        out_port = calculateDOR(nodo_destino, nodo_actual);
+
+        vcBegin = vcEnd;
 
       }else{
 
-        int dimension_salida = -1;
-        int flits_disponibles = -1;
-
+        vcEnd--; //quitamos el ultimo canal.
+        int flits_disponibles_max = 0;
 
         for(int i = 0; i< gN ; i++){
 
@@ -427,22 +429,20 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
               sitios_libres += creditos[puerto * (gNumVCs) + canal];
             }
 
-            if(sitios_libres > flits_disponibles){ //es DOR ante empates a 0 flits...
+            if(sitios_libres > flits_disponibles_max){
 
-              flits_disponibles = sitios_libres;
-              dimension_salida = i;
+              flits_disponibles_max = sitios_libres;
               out_port = puerto; //esto es lo normalizado.
+              break; // no hace falta coger el maximo en principio....
 
-              break; //Entramos a la primera solo
             }
 
           }
 
         }
 
-        assert(out_port != -1); //no deberia ser...
-
-        if(flits_disponibles <= 0 || es_dor){ //inyeccion
+        if(flits_disponibles_max == 0){ //si no hay flits...
+          out_port = calculateDOR(nodo_destino, nodo_actual);
           vcEnd++;
           vcBegin = vcEnd;
         }
