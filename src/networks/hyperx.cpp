@@ -441,7 +441,7 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
         }
 
-        if(flits_disponibles_max == 0){ //si no hay flits...
+        if(flits_disponibles_max <= 1){ //si no hay flits...
           out_port = calculateDOR(nodo_destino, nodo_actual);
           vcEnd++;
           vcBegin = vcEnd;

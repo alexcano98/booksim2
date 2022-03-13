@@ -30,10 +30,10 @@ echo "Parsed directory: $PARSED_DIR"
 # Check if the parsed directory already exists
 if [ -d "$PARSED_DIR" ]; then
     echo "Error: "$PARSED_DIR" already exists"
-    exit 1
-else
-    mkdir $PARSED_DIR
+    rm -rf $PARSED_DIR
+    #exit 1
 fi
+mkdir $PARSED_DIR
 
 
 # Check if the injection rates file exists

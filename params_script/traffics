@@ -1,1 +1,1 @@
-uniform tornado
+uniform tornado bitrev transpose randperm shuffle
