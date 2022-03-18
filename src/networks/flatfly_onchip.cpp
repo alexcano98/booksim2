@@ -182,6 +182,7 @@ void FlatFlyOnChip::_BuildNet( const Configuration &config )
         }
         //adopted from the CMESH, the first node has 0,1,8,9 (as an example)
         int link = (_xcount * _xrouter) * (_yrouter * y_index + y) + (_xrouter * x_index + x) ;
+        //cada nodo tiene un subcuadrado del cuadrado de nodos orignal, respetando los indices.
 
         if(use_noc_latency){
           _inject[link]->SetLatency(ileng);
@@ -229,9 +230,14 @@ void FlatFlyOnChip::_BuildNet( const Configuration &config )
         int offset = 0; //silly ness when node< other or when node>other
         //if xdimension
         if(dim == 0){
+
           other = ycurr * _k +cnt;
+
         } else if (dim ==1){
+
+
           other = cnt * _k + xcurr;
+
           if(_n==3){
             other+= curr4*_k*_k;
           }
@@ -239,6 +245,8 @@ void FlatFlyOnChip::_BuildNet( const Configuration &config )
             curr4=((int)(node/(_k*_k)))%_k;
             other+= curr4*_k*_k+curr5*_k*_k*_k;
           }
+
+
         }else if (dim ==2){
           other = cnt*_k*_k + curr3;
           if(_n==4){
@@ -248,6 +256,7 @@ void FlatFlyOnChip::_BuildNet( const Configuration &config )
           other = cnt*_k*_k*_k+curr6;
         }
         assert(dim < 4);
+
         if(other == node){
           #ifdef DEBUG_FLATFLY
           cout << "ignore channel : " << _output << " to node " << node <<" and "<<other<<endl;
@@ -261,7 +270,7 @@ void FlatFlyOnChip::_BuildNet( const Configuration &config )
         length = _xrouter*oned + _yrouter *twod;
         //oh the node<other silly ness
         if(node<other){
-          offset = -1;
+          offset = -1; //esto es porque sino te sale un link mas, estas iterando sobre k y saltandote a ti mismo.
         }
         //node, dimension, router within dimension. Good luck understanding this
         _output = (_k-1) * _n  * node + (_k-1) * dim  + cnt+offset;
@@ -331,6 +340,8 @@ void FlatFlyOnChip::RegisterRoutingFunctions(){
   gRoutingFunctionMap["adaptive_dor_exit_flatfly"] = &adaptative_dor_exit_flatfly;
 }
 
+
+
 //num_vcs == diameter of the network
 void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_channel,
   OutputSet *outputs, bool inject )
@@ -398,6 +409,21 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
 
       int vcBegin = 0, vcEnd = gNumVCs-1;
 
+      if ( f->type == Flit::READ_REQUEST ) {
+        vcBegin = gReadReqBeginVC;
+        vcEnd = gReadReqEndVC;
+      } else if ( f->type == Flit::WRITE_REQUEST ) {
+        vcBegin = gWriteReqBeginVC;
+        vcEnd = gWriteReqEndVC;
+      } else if ( f->type ==  Flit::READ_REPLY ) {
+        vcBegin = gReadReplyBeginVC;
+        vcEnd = gReadReplyEndVC;
+      } else if ( f->type ==  Flit::WRITE_REPLY ) {
+        vcBegin = gWriteReplyBeginVC;
+        vcEnd = gWriteReplyEndVC;
+      }
+      assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
+
 
       int out_port;
 
@@ -418,16 +444,13 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
           out_port = dest % gC;
 
         }else if(f->vc == vcEnd){ //Si entramos por vc DOR
+
           out_port =  flatfly_outport(dest, r->GetID());
-          vcEnd = vcEnd;
           vcBegin = vcEnd;
 
-        }else { //Por cualquier sitio
+        }else{ //Por cualquier sitio
 
           vcEnd--; //ultimo canal reservado
-
-          //int available_vcs = (vcEnd - vcBegin + 1);
-          //assert(available_vcs > 0);
 
           int out_port_xy =  flatfly_outport(dest, r->GetID());
           int out_port_yx =  flatfly_outport_yx(dest, r->GetID());
@@ -442,19 +465,18 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
             credit_xy += creditos[out_port_xy * gNumVCs + canal]; //antes estaba -1 pero creo que asi mejor
             credit_yx += creditos[out_port_yx * gNumVCs + canal];
           }
-          //GetBufferOccupancy(int i)
 
-
-          if(credit_xy > 1 ) { //primero con orden en xy
+          if(credit_xy > gNumVCs ) { //primero con orden en xy
             out_port = out_port_xy;
-          } else if(credit_yx > 1 ) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
+
+          } else if(credit_yx > gNumVCs ) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
             out_port = out_port_yx;
-          } else{ //canal de escape DOR. -> xy
+
+          } else { //canal de escape DOR. -> xy
             out_port = out_port_xy;
             vcEnd += 1;
             vcBegin = vcEnd;
           }
-
 
         }
 
@@ -541,6 +563,7 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
 
         outputs->AddRange( out_port , vcBegin, vcEnd );
       }
+
 
       //The initial XY or YX minimal routing direction is chosen randomly
       void xyyx_flatfly( const Router *r, const Flit *f, int in_channel,
@@ -1462,5 +1485,8 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
                     //transform the destination to as if node0 was 0,1,2,3 and so forth
                     dest = (vertical*_xcount + horizontal)*gC+_xrouter*vertical_rem+horizontal_rem;
                     //cout<<"Transformed destination "<<dest<<endl<<endl;
+
+
+                    //hasta el primer + es el router al q van, lo de despues es para el puerto que usan....
                     return dest;
                   }

@@ -1,4 +1,4 @@
-num_vcs     = 2;
+num_vcs     = 8;
 //vc_buf_size = 4;
 latency_thres = 10000000.0;
 

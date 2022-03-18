@@ -919,6 +919,8 @@ TrafficManager * TrafficManager::New(Configuration const & config,
         }
       }
 
+      // -----------------FIN DE PAQUETE ---------------
+
       void TrafficManager::_Inject(){
 
         for ( int input = 0; input < _nodes; ++input ) {

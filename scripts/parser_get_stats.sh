@@ -74,7 +74,7 @@ do
         grep "results:" ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out | sed 's/results://g' >> ${PARSED_DIR}/${traffic}/${routing}_sim_out.csv
         grep "Time taken is" ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out| awk '{print $4}' >> ${PARSED_DIR}/${traffic}/${routing}_cycles.csv
         grep "Total run time" ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out | awk '{print $4}' >> ${PARSED_DIR}/${traffic}/${routing}_run_time.csv
-
+        grep "Hops average" ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out | awk '{print $4}' >> ${PARSED_DIR}/${traffic}/${routing}_hops_avg.csv
     done
     # Delete "results:" from the beginning of the lines
     sed -i 's/results://g' ${PARSED_DIR}/${traffic}/${routing}_sim_out.csv

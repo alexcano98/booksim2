@@ -1,4 +1,4 @@
-num_vcs     = 2;
+num_vcs     = 8;
 //vc_buf_size = 4;
 latency_thres = 10000000.0;
 
@@ -18,7 +18,7 @@ xr = 2;
 yr = 2;
 
 
-sample_period = 1000;
+sample_period = 100;
 warmup_periods = 200;
 max_samples = 204;
 
@@ -30,8 +30,8 @@ print_csv_results = 1;
 
 
 
-routing_function =dor;
+routing_function =adaptive_dor_exit;
 sim_type = latency;
 
-injection_rate = 0.5;
-traffic = uniform;
+injection_rate = 1.0;
+traffic = tornado;
