@@ -173,6 +173,7 @@ void Hyperx::_BuildNet( const Configuration &config )
 
   } //fin dim node
 
+
   for(int i = 0; i< _c; i++){
     int link = (node * _c) +i;
     //injection and ejection channel, always 1 latency
@@ -181,7 +182,7 @@ void Hyperx::_BuildNet( const Configuration &config )
     _inject[link]->SetLatency( 1 );
     _eject[link]->SetLatency( 1 );
   }
-
+  
 } //fin node
 
 //Empezamos el debug:

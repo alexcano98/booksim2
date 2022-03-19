@@ -78,6 +78,7 @@ def main():
     flits_latency_list = {'injected_rate': injected_rate}
     accepted_flits_list = {'injected_rate': injected_rate}
     traffic_pattern_list = {'injected_rate': injected_rate}
+    hops_avg_list = {'injected_rate': injected_rate}
 
     os.chdir(out_dir)
     for t in traffics:
@@ -125,6 +126,19 @@ def main():
         #plt.show()
         plt.savefig('./plots/'+topology+'_flits_latency_'+t+'.png')
         print("Flits latency plot created")
+
+
+        data = pd.DataFrame(accepted_flits_list)
+        data.plot(x='injected_rate', y=routings, legend=True, title='Flits latency')
+        plt.ylabel('Accepted flits')
+        plt.xlabel('Injected Rate (Flits/cycle/node)')
+        plt.title('Throughput [TP={}]'.format(traffic_pattern))
+        plt.xticks(np.arange(0, 1.1, 0.1))
+        plt.yticks(np.arange(0, 1.1, 0.1))
+        plt.grid()
+        #plt.show()
+        plt.savefig('./plots/'+topology+'_throughput_'+t+'.png')
+        print("Throughput plot created")
 
 
         data = pd.DataFrame(accepted_flits_list)
