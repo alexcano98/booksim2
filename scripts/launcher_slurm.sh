@@ -10,7 +10,7 @@
 
 LC_NUMERIC="en_US.UTF-8"
 # Booksim binary
-BOOKSIM_HOME=/home/alejandro/booksim2/src/
+BOOKSIM_HOME=/home/alejandro/booksim2/src
 # Config file for the simulation
 CONFIG_FILE=$1
 # Injection rates
@@ -64,14 +64,14 @@ do
       do
 
         echo "#!/bin/bash
-              #SBATCH --job-name=booksim
-              #SBATCH -D .
-              #SBATCH --output= ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out
-              #SBATCH --error= ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.err
-              #SBATCH --cpus-per-task=1
-              #SBATCH --ntasks=1
-              #SBATCH --time=1-11:59:59
-              #SBATCH --mem=5GB" > ${traffic}_sim_${inj_rate}_${routing}.sbatch
+        #SBATCH --job-name=booksim
+        #SBATCH -D .
+        #SBATCH --output= ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out
+        #SBATCH --error= ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.err
+        #SBATCH --cpus-per-task=1
+        #SBATCH --ntasks=1
+        #SBATCH --time=1-11:59:59
+        #SBATCH --mem=5GB" > ${traffic}_sim_${inj_rate}_${routing}.sbatch
 
 
         # Create the sbatch body
