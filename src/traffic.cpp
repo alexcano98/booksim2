@@ -129,8 +129,8 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
         exit(-1);
       }
       result = new BadPermDFlyTrafficPattern(nodes, k, n);
-    } else if((pattern_name == "tornado_alex") ||(pattern_name == "tornado") || (pattern_name == "neighbor") ||
-    (pattern_name == "badperm_yarc")) {
+    } else if( (pattern_name == "complement_reverse") || (pattern_name == "tornado_alex") ||(pattern_name == "tornado")
+    || (pattern_name == "neighbor") || (pattern_name == "badperm_yarc")) {
       bool missing_params = false;
       int k = -1;
       if(params.size() < 1) {
@@ -172,6 +172,8 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
         result = new TornadoTrafficPattern(nodes, k, n, xr);
       } else if(pattern_name == "tornado_alex") {
         result = new TornadoAlexTrafficPattern(nodes, k, n, xr);
+      } else if(pattern_name == "complement_reverse") {
+        result = new ComplementReverse2DTrafficPattern(nodes, k, n, xr);
       } else if(pattern_name == "neighbor") {
         result = new NeighborTrafficPattern(nodes, k, n, xr);
       } else if(pattern_name == "badperm_yarc") {
@@ -297,6 +299,36 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
 
     return result;
   }
+
+  ComplementReverse2DTrafficPattern::ComplementReverse2DTrafficPattern(int nodes, int k, int n, int xr)
+  : DigitPermutationTrafficPattern(nodes, k, n, xr)
+  {
+
+  }
+
+  int ComplementReverse2DTrafficPattern::dest(int source)
+  {
+    assert((source >= 0) && (source < _nodes));
+
+    int source_x = (source % (_xr * _k)); //proyeccion
+    int source_y = (source / (_xr * _k)); //proyeccion
+
+    int source_x_router = (source % (_xr * _k))/ _xr; //proyeccion
+    int source_y_router = (source / (_xr * _k))/ _xr; //proyeccion
+
+    int offset_inside_x  = source_x % _xr;
+    int offset_inside_y  = source_y % _xr;
+
+    int result =  (_xr ) * (_k - source_y_router -1 )  +  (_xr * _xr * _k)  * (_k - source_x_router -1 )
+                + (offset_inside_y * _xr * _k) + offset_inside_x; //esto es una fumada por culpa de los mapeos
+
+
+    //nos situamos en la primera fila de x del server dentro del router, lo subimos xr*xr*k*y
+    //(cuadrados completos) y luego los offsets de dentro del router.
+
+    return result;
+  }
+
 
   ShuffleTrafficPattern::ShuffleTrafficPattern(int nodes)
   : BitPermutationTrafficPattern(nodes)

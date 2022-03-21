@@ -106,7 +106,7 @@ def main():
                 os.makedirs('plots')
 
             df_sim = pd.read_csv(routing + "_" +sim_out, sep=',', header=None)
-            flits_latency = df_sim[F_LAT]
+            flits_latency = df_sim[P_LAT] #F_LAT
             accepted_flits = df_sim[F_ACC]
             traffic_pattern = df_sim[1][0]
 
