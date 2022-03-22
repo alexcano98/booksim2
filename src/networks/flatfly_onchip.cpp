@@ -466,10 +466,10 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
             credit_yx += creditos[out_port_yx * gNumVCs + canal];
           }
 
-          if(credit_xy > gNumVCs ) { //primero con orden en xy
+          if(credit_xy > 0 ) { //primero con orden en xy gNumVCs
             out_port = out_port_xy;
 
-          } else if(credit_yx > gNumVCs ) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
+          } else if(credit_yx > 0 ) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
             out_port = out_port_yx;
 
           } else { //canal de escape DOR. -> xy
