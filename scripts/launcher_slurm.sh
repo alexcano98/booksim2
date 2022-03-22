@@ -48,7 +48,7 @@ if [ -d "$OUT_DIR" ] && [ "${PURGE}" -eq "1" ]; then
 fi
 
 mkdir -p ${OUT_DIR}
-
+echo "hola"
 # Copy the config file to simulation directory
 cp ${CONFIG_FILE} ${OUT_DIR}/config
 cp ${PARAMS}/* ${OUT_DIR}/
