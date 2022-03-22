@@ -75,7 +75,7 @@ do
 
 
         # Create the sbatch body
-        echo "/usr/bin/time --verbose -o ./time_results/sim_${inj_rate}_${warmup_cycles}.time ${BOOKSIM_HOME}/booksim injection_rate=${inj_rate}
+        echo "/usr/bin/time --verbose -o ./time_results/sim_${inj_rate}.time ${BOOKSIM_HOME}/booksim injection_rate=${inj_rate}
          traffic=${traffic} routing_function=${routing}" >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
 
         # Submit the sbatch
