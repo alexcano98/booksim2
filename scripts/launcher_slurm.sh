@@ -73,9 +73,9 @@ do
         #SBATCH --time=1-11:59:59
         #SBATCH --mem=5GB" > ${traffic}_sim_${inj_rate}_${routing}.sbatch
 
-
+        #/usr/bin/time --verbose -o ./time_results/sim_${inj_rate}.time
         # Create the sbatch body
-        echo "/usr/bin/time --verbose -o ./time_results/sim_${inj_rate}.time ${BOOKSIM_HOME}/booksim injection_rate=${inj_rate}
+        echo " ${BOOKSIM_HOME}/booksim injection_rate=${inj_rate}
          traffic=${traffic} routing_function=${routing}" >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
 
         # Submit the sbatch

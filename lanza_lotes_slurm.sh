@@ -1,1 +1,1 @@
-sh scripts/launcher_slurm.sh params_script/ /home/alejandro/booksim2/results 0
+sh scripts/launcher_slurm.sh runfiles/flat_fly/flatflt_topology_2vcs params_script/ 1
