@@ -103,6 +103,18 @@ public:
   virtual int dest(int source);
 };
 
+class TornadoXYAlexTrafficPattern : public DigitPermutationTrafficPattern {
+public:
+  TornadoXYAlexTrafficPattern(int nodes, int k, int n, int xr = 1);
+  virtual int dest(int source);
+};
+
+class TornadoHalfAlexTrafficPattern : public DigitPermutationTrafficPattern {
+public:
+  TornadoHalfAlexTrafficPattern(int nodes, int k, int n, int xr = 1);
+  virtual int dest(int source);
+};
+
 class ComplementReverse2DTrafficPattern : public DigitPermutationTrafficPattern {
 public:
   ComplementReverse2DTrafficPattern(int nodes, int k, int n, int xr = 1);

@@ -129,8 +129,14 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
         exit(-1);
       }
       result = new BadPermDFlyTrafficPattern(nodes, k, n);
-    } else if( (pattern_name == "complement_reverse") || (pattern_name == "tornado_alex") ||(pattern_name == "tornado")
-    || (pattern_name == "neighbor") || (pattern_name == "badperm_yarc")) {
+    } else if( (pattern_name == "tornado_alex_half")
+            || (pattern_name == "tornado_alex_xy")
+            ||(pattern_name == "complement_reverse")
+            || (pattern_name == "tornado_alex")
+            ||(pattern_name == "tornado")
+            || (pattern_name == "neighbor")
+            || (pattern_name == "badperm_yarc") ) {
+
       bool missing_params = false;
       int k = -1;
       if(params.size() < 1) {
@@ -172,6 +178,10 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
         result = new TornadoTrafficPattern(nodes, k, n, xr);
       } else if(pattern_name == "tornado_alex") {
         result = new TornadoAlexTrafficPattern(nodes, k, n, xr);
+      } else if(pattern_name == "tornado_alex_xy") {
+        result = new TornadoXYAlexTrafficPattern(nodes, k, n, xr);
+      } else if(pattern_name == "tornado_alex_half") {
+        result = new TornadoHalfAlexTrafficPattern(nodes, k, n, xr);
       } else if(pattern_name == "complement_reverse") {
         result = new ComplementReverse2DTrafficPattern(nodes, k, n, xr);
       } else if(pattern_name == "neighbor") {
@@ -272,6 +282,7 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
     return result;
   }
 
+
   TornadoAlexTrafficPattern::TornadoAlexTrafficPattern(int nodes, int k, int n, int xr)
   : DigitPermutationTrafficPattern(nodes, k, n, xr)
   {
@@ -299,6 +310,84 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
 
     return result;
   }
+
+
+  TornadoXYAlexTrafficPattern::TornadoXYAlexTrafficPattern(int nodes, int k, int n, int xr)
+  : DigitPermutationTrafficPattern(nodes, k, n, xr)
+  {
+
+  }
+
+  int TornadoXYAlexTrafficPattern::dest(int source)
+  {
+    assert((source >= 0) && (source < _nodes));
+
+    int source_x = (source % (_xr * _k));
+    int source_y = (source / (_xr * _k)); //coordenadas generales
+
+    int offset_inside_x = source_x % _xr;
+    int offset_inside_y = source_y % _xr; // coordenadas server
+
+    int salto = (( _k - 1) / 2) * _xr; //salto en las proyecciones
+
+
+    int result = source;
+
+    if( (source_x + salto) >= (_xr * _k)){ //hacia atras
+
+      result += salto - (_xr * _k); //lo cogemos hacia detras...
+
+    }else{
+
+      result += salto;
+
+    }
+
+    if( (source_y + salto) >= (_k * _xr) ){ //hacia atras...
+
+      result +=  salto * (_xr * _k) -  (_k * _xr) * (_xr * _k);
+
+    }else{
+
+      result += salto * (_xr * _k);
+    }
+
+
+    return result;
+  }
+
+
+
+  TornadoHalfAlexTrafficPattern::TornadoHalfAlexTrafficPattern(int nodes, int k, int n, int xr)
+  : DigitPermutationTrafficPattern(nodes, k, n, xr)
+  {
+
+  }
+
+  int TornadoHalfAlexTrafficPattern::dest(int source)
+  {
+    assert((source >= 0) && (source < _nodes));
+
+    int source_x = (source % (_xr * _k)); //proyeccion
+    int salto = (( _k - 1) / 2) * _xr + (source_x % 2); //salto en routers * nodos por router
+    int result = 0;
+
+    if( (source_x + salto) >= (_xr * _k)){ //hacia atras
+
+    salto = salto - (_xr * _k); //lo cogemos hacia detras...
+    result = source + salto;
+
+    }else{ //hacia delante
+
+      result = source + salto;
+    }
+
+
+    return result;
+  }
+
+
+
 
   ComplementReverse2DTrafficPattern::ComplementReverse2DTrafficPattern(int nodes, int k, int n, int xr)
   : DigitPermutationTrafficPattern(nodes, k, n, xr)

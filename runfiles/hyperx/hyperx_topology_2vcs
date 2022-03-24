@@ -7,6 +7,8 @@ topology = hyperx;
 injection_rate_uses_flits = 1;
 use_noc_latency = 0;
 c  = 4;
+xr = 4;
+
 k  = 4;
 n  = 2;
 
