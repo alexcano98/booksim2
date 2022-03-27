@@ -1,0 +1,35 @@
+num_vcs     = 2;
+//vc_buf_size = 4;
+latency_thres = 10000000.0;
+
+topology = flatfly;
+
+injection_rate_uses_flits = 1;
+//use_noc_latency = 0;
+
+c  = 16;
+k  = 16;
+n  = 2;
+
+x = 16;
+y = 16;
+
+xr = 4;
+yr = 4;
+
+
+sample_period = 1000;
+warmup_periods = 200;
+max_samples = 204;
+
+
+input_speedup = 4;
+output_speedup = 4;
+internal_speedup = 1.5;
+print_csv_results = 1;
+
+routing_function =dor;
+sim_type = latency;
+
+injection_rate = 0.5;
+traffic = uniform;

@@ -6,13 +6,17 @@ import numpy as np
 import os
 
 P_LAT = 5
+P_W_LAT = 6
 N_LAT = 8
+N_W_LAT = 9
 F_LAT = 11
 FRAGM = 14
 P_INJ = 17
 P_ACC = 20
 F_INJ = 23
 F_ACC = 26
+F_W_ACC = 25
+H_AVG = 30
 
 
 def main():
@@ -79,6 +83,9 @@ def main():
     accepted_flits_list = {'injected_rate': injected_rate}
     traffic_pattern_list = {'injected_rate': injected_rate}
     hops_avg_list = {'injected_rate': injected_rate}
+    worst_flits_latency_list = {'injected_rate': injected_rate}
+    worst_accepted_flits_list = {'injected_rate': injected_rate}
+
 
     os.chdir(out_dir)
     for t in traffics:
@@ -109,10 +116,16 @@ def main():
             flits_latency = df_sim[P_LAT] #F_LAT
             accepted_flits = df_sim[F_ACC]
             traffic_pattern = df_sim[1][0]
+            hops_avg = df_sim[H_AVG]
+            worst_flits_latency = df_sim[P_W_LAT] #F_LAT
+            worst_accepted_flits = df_sim[F_W_ACC]
 
             flits_latency_list[routing] = flits_latency
             accepted_flits_list[routing] = accepted_flits
             traffic_pattern_list[routing] = traffic_pattern
+            hops_avg_list[routing] = hops_avg
+            worst_flits_latency_list[routing] = worst_flits_latency
+            worst_accepted_flits_list[routing] = worst_accepted_flits
 
 
 
@@ -127,9 +140,20 @@ def main():
         plt.savefig('./plots/'+topology+'_flits_latency_'+t+'.png')
         print("Flits latency plot created")
 
+        data = pd.DataFrame(worst_flits_latency_list)
+        data.plot(x='injected_rate', y=routings, legend=True, title='Worst flits latency')
+        plt.ylabel('Latency (cycles)')
+        plt.xlabel('Injected rate (Flits/cycle/node)')
+        plt.title('Flits latency (cycles) [TP={}]'.format(traffic_pattern))
+        plt.xticks(np.arange(0, 1.1, 0.1))
+        plt.grid()
+        #plt.show()
+        plt.savefig('./plots/'+topology+'_worst_flits_latency_'+t+'.png')
+        print("Flits latency plot created")
+
 
         data = pd.DataFrame(accepted_flits_list)
-        data.plot(x='injected_rate', y=routings, legend=True, title='Flits latency')
+        data.plot(x='injected_rate', y=routings, legend=True, title='Throughput')
         plt.ylabel('Accepted flits')
         plt.xlabel('Injected Rate (Flits/cycle/node)')
         plt.title('Throughput [TP={}]'.format(traffic_pattern))
@@ -140,9 +164,8 @@ def main():
         plt.savefig('./plots/'+topology+'_throughput_'+t+'.png')
         print("Throughput plot created")
 
-
-        data = pd.DataFrame(accepted_flits_list)
-        data.plot(x='injected_rate', y=routings, legend=True, title='Flits latency')
+        data = pd.DataFrame(worst_accepted_flits_list)
+        data.plot(x='injected_rate', y=routings, legend=True, title='Worst throughput')
         plt.ylabel('Accepted flits')
         plt.xlabel('Injected Rate (Flits/cycle/node)')
         plt.title('Throughput [TP={}]'.format(traffic_pattern))
@@ -150,8 +173,19 @@ def main():
         plt.yticks(np.arange(0, 1.1, 0.1))
         plt.grid()
         #plt.show()
-        plt.savefig('./plots/'+topology+'_throughput_'+t+'.png')
+        plt.savefig('./plots/'+topology+'_worst_throughput_'+t+'.png')
         print("Throughput plot created")
+
+        data = pd.DataFrame(hops_avg_list)
+        data.plot(x='injected_rate', y=routings, legend=True, title='Hops average')
+        plt.ylabel('Avg hops')
+        plt.xlabel('Injected Rate (Flits/cycle/node)')
+        plt.title('Hops [TP={}]'.format(traffic_pattern))
+
+        plt.grid()
+        #plt.show()
+        plt.savefig('./plots/'+topology+'_hops_'+t+'.png')
+        print("Hops plot created")
 
         os.chdir("../") # volvemos atras
 
