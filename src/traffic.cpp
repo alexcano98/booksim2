@@ -131,7 +131,7 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
       result = new BadPermDFlyTrafficPattern(nodes, k, n);
     } else if( (pattern_name == "tornado_alex_half")
             || (pattern_name == "tornado_alex_xy")
-            ||(pattern_name == "complement_reverse")
+            ||(pattern_name == "complement_reverse_2d")
             || (pattern_name == "tornado_alex")
             ||(pattern_name == "tornado")
             || (pattern_name == "neighbor")
@@ -182,7 +182,8 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
         result = new TornadoXYAlexTrafficPattern(nodes, k, n, xr);
       } else if(pattern_name == "tornado_alex_half") {
         result = new TornadoHalfAlexTrafficPattern(nodes, k, n, xr);
-      } else if(pattern_name == "complement_reverse") {
+      } else if(pattern_name == "complement_reverse_2d") {
+        assert(k == xr *xr);
         result = new ComplementReverse2DTrafficPattern(nodes, k, n, xr);
       } else if(pattern_name == "neighbor") {
         result = new NeighborTrafficPattern(nodes, k, n, xr);
@@ -402,19 +403,31 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
     int source_x = (source % (_xr * _k)); //proyeccion
     int source_y = (source / (_xr * _k)); //proyeccion
 
-    int source_x_router = (source % (_xr * _k))/ _xr; //proyeccion
-    int source_y_router = (source / (_xr * _k))/ _xr; //proyeccion
+    int source_x_router = source_x / _xr; //proyeccion
+    int source_y_router = source_y / _xr; //proyeccion
 
     int offset_inside_x  = source_x % _xr;
     int offset_inside_y  = source_y % _xr;
 
-    int result =  (_xr ) * (_k - source_y_router -1 )  +  (_xr * _xr * _k)  * (_k - source_x_router -1 )
-                + (offset_inside_y * _xr * _k) + offset_inside_x; //esto es una fumada por culpa de los mapeos
-
+    //  int result =  (_xr ) * (_k - source_y_router -1 )  +  (_xr * _xr * _k)  * (_k - source_x_router -1 )
+    //            + (offset_inside_y * _xr * _k) + offset_inside_x; //esto es una fumada por culpa de los mapeos
 
     //nos situamos en la primera fila de x del server dentro del router, lo subimos xr*xr*k*y
     //(cuadrados completos) y luego los offsets de dentro del router.
 
+    //UPDATE; (w,x,y) = (-x,-w,-y)
+
+    int w = _xr * offset_inside_y + offset_inside_x;
+    int w_neg = (-w + _k) % _k;
+
+    int x_neg = (-source_x_router + _k) % _k;
+    
+    int x_neg_offset_x = x_neg % _xr;
+    int x_neg_offset_y = x_neg / _xr;
+
+    int y_neg = (-source_y_router + _k) % _k;
+
+    int result = (_xr * _xr) * y_neg * _k + (_xr) * w_neg + _xr  * _k * x_neg_offset_y + x_neg_offset_x;
     return result;
   }
 
