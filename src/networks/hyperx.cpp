@@ -342,8 +342,9 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
     }else{
 
+
       int dimension_salida = -1;
-      int flits_disponibles = -1;
+      int min_occupancy = INT_MAX;
       vector<int> creditos = r->FreeCredits();
 
       for(int i = 0; i< gN ; i++){
@@ -352,15 +353,17 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
         if(salida != 0){ //Si hay que recorrer esta salida...
 
-          int sitios_libres = 0;
+          int occupancy = 0;
           int puerto = i *(gK-1) + salida - 1;
 
-          for(int canal = 0; canal <gNumVCs; canal++){
+          /*for(int canal = vcBegin; canal < vcEnd; canal++){
             sitios_libres += creditos[puerto*gNumVCs + canal];
-          }
+          }*/
 
-          if(sitios_libres > flits_disponibles){
-            flits_disponibles = sitios_libres;
+          occupancy = r->GetUsedCredit(puerto);
+
+          if(occupancy < min_occupancy){
+            min_occupancy = occupancy;
             dimension_salida = i;
             out_port = puerto; //esto es lo normalizado.
           }
@@ -371,12 +374,14 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
       assert(out_port != -1); //no deberia ser...
 
+
       if(in_channel >= gN * (gK-1)){ //inyeccion
         vcEnd -= gNumVCs/2;
       }else{
         vcBegin += gNumVCs/2;
       }
 
+      printf("entry: %d, start: %d, end: %d \n", f->vc, vcBegin, vcEnd);
     }
 
 

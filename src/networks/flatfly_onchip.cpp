@@ -488,6 +488,7 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
     }
 
     //The initial XY or YX minimal routing direction is chosen adaptively
+    //ESTO NO ES LO MISMO QUE LOS CANALES VIRTUALES EN ESCALERA.
     void adaptive_xyyx_flatfly( const Router *r, const Flit *f, int in_channel,
       OutputSet *outputs, bool inject )
       {
@@ -534,7 +535,7 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
             // Route order (XY or YX) determined when packet is injected
             //  into the network, adaptively
             bool x_then_y;
-            if(in_channel < gC){
+            if(in_channel < gC){ //si se inyecta
               int credit_xy = r->GetUsedCredit(out_port_xy);
               int credit_yx = r->GetUsedCredit(out_port_yx);
               if(credit_xy > credit_yx) {
@@ -555,6 +556,7 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
               out_port = out_port_yx;
               vcBegin += available_vcs;
             }
+            printf("entry: %d, start: %d, end: %d \n", f->vc, vcBegin, vcEnd);
           }
 
         }
