@@ -30,7 +30,7 @@
 
 // Flow control
 // Total number of VCs must match the above assignments
-num_vcs     = 4;
+num_vcs     = 2;
 //vc_buf_size = 4;
 latency_thres = 10000000.0;
 
@@ -49,15 +49,15 @@ use_noc_latency = 0;
 topology = hyperx;
 subnets = 1;
 
-c  = 3;
-k  = 3;
-n  = 3;
+c  = 4;
+k  = 4;
+n  = 2;
 
 
 //x = 4;
 //y = 4;
 
-//xr = 2;
+xr = 4;
 //yr = 2;
 
 
@@ -78,7 +78,7 @@ traffic = tornado;
 watch_out=fichero.txt;
 watch_packets = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,40,55,89,120,121,122,123};
 
-sample_period = 100;
+sample_period = 1000;
 warmup_periods = 200;
 max_samples = 204;
 

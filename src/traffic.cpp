@@ -415,17 +415,17 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
     //nos situamos en la primera fila de x del server dentro del router, lo subimos xr*xr*k*y
     //(cuadrados completos) y luego los offsets de dentro del router.
 
-    //UPDATE; (w,x,y) = (-x,-w,-y)
+    //UPDATE; (w,x,y) = (-x -1,-w -1,-y -1)
 
     int w = _xr * offset_inside_y + offset_inside_x;
-    int w_neg = (-w + _k) % _k;
+    int w_neg = (-w + _k -1) % _k;
 
-    int x_neg = (-source_x_router + _k) % _k;
-    
+    int x_neg = (-source_x_router + _k -1) % _k;
+
     int x_neg_offset_x = x_neg % _xr;
     int x_neg_offset_y = x_neg / _xr;
 
-    int y_neg = (-source_y_router + _k) % _k;
+    int y_neg = (-source_y_router + _k-1) % _k;
 
     int result = (_xr * _xr) * y_neg * _k + (_xr) * w_neg + _xr  * _k * x_neg_offset_y + x_neg_offset_x;
     return result;

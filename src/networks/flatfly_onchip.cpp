@@ -331,23 +331,23 @@ void FlatFlyOnChip::RegisterRoutingFunctions(){
   gRoutingFunctionMap["adaptive_xyyx_flatfly"] = &adaptive_xyyx_flatfly;
   gRoutingFunctionMap["xyyx_flatfly"] = &xyyx_flatfly;
   gRoutingFunctionMap["valiant_flatfly"] = &valiant_flatfly;
+
   gRoutingFunctionMap["ugal_flatfly"] = &ugal_flatfly_onchip;
   gRoutingFunctionMap["ugal_pni_flatfly"] = &ugal_pni_flatfly_onchip;
   gRoutingFunctionMap["ugal_xyyx_flatfly"] = &ugal_xyyx_flatfly_onchip;
 
   //funciones implementadas por mi
-  gRoutingFunctionMap["minimal_ladder_adaptive_flatfly"] = &minimal_ladder_adaptive_flatfly;
+  gRoutingFunctionMap["adaptive_escalera_flatfly"] = &adaptive_escalera_flatfly;
   gRoutingFunctionMap["adaptive_dor_exit_flatfly"] = &adaptative_dor_exit_flatfly;
 }
 
 
 
 //num_vcs == diameter of the network
-void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_channel,
+void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel,
   OutputSet *outputs, bool inject )
   {
-    //puts("aaaaaaaaaaaaaaaaaaaa");
-    // ( Traffic Class , Routing Order ) -> Virtual Channel Range
+
     int vcBegin = 0, vcEnd = gNumVCs-1;
 
     int out_port;
@@ -488,6 +488,7 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
     }
 
     //The initial XY or YX minimal routing direction is chosen adaptively
+    //ESTO NO ES LO MISMO QUE LOS CANALES VIRTUALES EN ESCALERA.
     void adaptive_xyyx_flatfly( const Router *r, const Flit *f, int in_channel,
       OutputSet *outputs, bool inject )
       {
@@ -534,7 +535,7 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
             // Route order (XY or YX) determined when packet is injected
             //  into the network, adaptively
             bool x_then_y;
-            if(in_channel < gC){
+            if(in_channel < gC){ //si se inyecta
               int credit_xy = r->GetUsedCredit(out_port_xy);
               int credit_yx = r->GetUsedCredit(out_port_yx);
               if(credit_xy > credit_yx) {
@@ -555,6 +556,7 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
               out_port = out_port_yx;
               vcBegin += available_vcs;
             }
+            //printf("entry: %d, start: %d, end: %d \n", f->vc, vcBegin, vcEnd);
           }
 
         }
@@ -822,7 +824,7 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
                   int threshold = 2;
 
 
-                  if ( in_channel < gC ){
+                  if ( in_channel < gC ){ //inyección
                     if(gTrace){
                       cout<<"New Flit "<<f->src<<endl;
                     }
@@ -851,13 +853,12 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
                     dest = f->intm;
                   }
 
-                  if (dest >= rID*_concentration && dest < (rID+1)*_concentration) {
+                  if (dest >= rID*_concentration && dest < (rID+1)*_concentration) { //Si el inyector esta en el router actual
                     if (f->ph == 1) {
                       f->ph = 2;
                       dest = flatfly_transformation(f->dest);
                       if (debug)   cout << "      done routing to intermediate ";
-                    }
-                    else  {
+                    }else  {
                       found = 1;
                       out_port = dest % gC;
                       if (debug)   cout << "      final routing to destination ";
@@ -870,9 +871,7 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
                     assert(xy_available_vcs > 0);
 
                     // randomly select dimension order at first hop
-                    bool x_then_y = ((in_channel < gC) ?
-                    (RandomInt(1) > 0) :
-                    (f->vc < (vcBegin + xy_available_vcs)));
+                    bool x_then_y = ((in_channel < gC) ? (RandomInt(1) > 0) : (f->vc < (vcBegin + xy_available_vcs)));
 
                     if (f->ph == 0) {
                       //find the min port and min distance
@@ -925,7 +924,7 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
                           dest = flatfly_transformation(f->dest);
                         }
                       }
-                    }
+                    } //END OF PH == 0
 
                     //dest here should be == intm if ph==1, or dest == dest if ph == 2
                     if(x_then_y){
@@ -1084,7 +1083,7 @@ void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_cha
                           *gWatchOut << GetSimTime() << " | " << r->FullName() << " | "
                           << " NONMIN tmp_out_port: " << tmp_out_port << endl;
                         }
-                        if (_ran_intm >= rID*_concentration && _ran_intm < (rID+1)*_concentration) {
+                        if (_ran_intm >= rID*_concentration && _ran_intm < (rID+1)*_concentration) { //si ya estamos en intermedio pues fijo vamos minimo
                           _nonmin_queucnt = numeric_limits<int>::max();
                         } else  {
                           _nonmin_queucnt =   r->GetUsedCredit(tmp_out_port);
