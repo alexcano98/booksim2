@@ -34,6 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "booksim.hpp"
 #include <vector>
 #include <sstream>
+#include <limits>
 #include "hyperx.hpp"
 
 #include "random_utils.hpp"
@@ -56,6 +57,9 @@ void Hyperx::_ComputeSize( const Configuration &config )
 	_k = config.GetInt( "k" );
 	_n = config.GetInt( "n" );
 	_c = config.GetInt( "c" );
+	_xr = config.GetInt( "xr" );
+
+	assert(_xr == _c); //cosas para el trafico tornado entre otros....
 
 	gC = _c;gK = _k; gN = _n;
 	_size     = powi( _k, _n );
@@ -72,6 +76,8 @@ void Hyperx::RegisterRoutingFunctions() {
 	gRoutingFunctionMap["adaptive_xyyx_hyperx"] = &adaptive_xyyx_hyperx;
 	gRoutingFunctionMap["adaptive_dor_exit_hyperx"] = &adaptive_dor_exit_hyperx;
 	gRoutingFunctionMap["valiant_hyperx"] = &valiant_hyperx;
+	gRoutingFunctionMap["adaptive_escalera_hyperx"] =&adaptive_escalera_hyperx;
+	gRoutingFunctionMap["ugal_hyperx"] =&ugal_hyperx;
 
 }
 
@@ -182,7 +188,7 @@ void Hyperx::_BuildNet( const Configuration &config )
 		_inject[link]->SetLatency( 1 );
 		_eject[link]->SetLatency( 1 );
 	}
-	
+
 } //fin node
 
 //Empezamos el debug:
@@ -245,7 +251,7 @@ int calculateExitPort(int node){
 	return node%gC;
 }
 
-int calculateDOR(int nodo_destino, int nodo_actual){
+int calculateDOR_routers(int nodo_destino, int nodo_actual){
 
 	int salida = 0;
 	int i = 0;
@@ -264,6 +270,93 @@ int calculateDOR(int nodo_destino, int nodo_actual){
 	return i *(gK-1) + salida - 1; //esto es lo normalizado.
 
 }
+
+int calculateDOR_ugal(int inyector_destino, int nodo_actual){
+
+	int salida = 0;
+	int i = 0;
+	int nodo_destino = calculateRouter(inyector_destino);
+	//int nodo_actual = calculateRouter(inyector_actual);
+
+	for(i = 0; i< gN ; i++){
+
+		salida = (node_vectors[nodo_destino * gN+i] - node_vectors[nodo_actual * gN+i] + gK) %gK;
+		if(salida != 0) break;
+
+	}
+
+	if(salida == 0){
+
+		return gN * (gK -1) + calculateExitPort(inyector_destino);
+
+	}else{
+
+		return i *(gK-1) + salida - 1; //esto es lo normalizado.
+
+	}
+
+
+
+}
+
+int find_distance_hyperx (int src, int dest) {
+	int dist = 0;
+	int _dim   = gN;
+
+	int src_tmp= (int) src / gC;
+	int dest_tmp = (int) dest / gC;
+
+	for (int d=0;d < _dim; d++) {
+
+		int src_id = src_tmp % gK;
+		int dest_id = dest_tmp % gK;
+		if (src_id !=  dest_id)
+		dist++;
+		src_tmp = (int) (src_tmp / gK);
+		dest_tmp = (int) (dest_tmp / gK);
+	}
+
+
+	return dist;
+}
+
+/*Para Ugal...*/
+int find_ran_intm_hyperx (int src, int dest) {
+	int _dim   = gN;
+	int _dim_size;
+	int _ran_dest = 0;
+	int debug = 0;
+
+	if (debug)
+	cout << " INTM node for  src: " << src << " dest: " <<dest << endl;
+
+	src = (int) (src / gC);
+	dest = (int) (dest / gC);
+
+	_ran_dest = RandomInt(gC - 1);
+	if (debug) cout << " ............ _ran_dest : " << _ran_dest << endl;
+
+	for (int d=0;d < _dim; d++) {
+		_dim_size = powi(gK, d)*gC;
+		if ((src % gK) ==  (dest % gK)) {
+			_ran_dest += (src % gK) * _dim_size;
+			if (debug)
+			cout << "    share same dimension : " << d << " int node : " << _ran_dest << " src ID : " << src % gK << endl;
+		} else {
+			// src and dest are in the same dimension "d" + 1
+			// ==> thus generate a random destination within
+			_ran_dest += RandomInt(gK - 1) * _dim_size;
+			if (debug)
+			cout << "    different  dimension : " << d << " int node : " << _ran_dest << " _dim_size: " << _dim_size << endl;
+		}
+		src = (int) (src / gK);
+		dest = (int) (dest / gK);
+	}
+
+	if (debug) cout << " intermediate destination NODE: " << _ran_dest << endl;
+	return _ran_dest;
+}
+
 
 
 void dor_hyperx( const Router *r, const Flit *f, int in_channel,
@@ -306,7 +399,7 @@ void dor_hyperx( const Router *r, const Flit *f, int in_channel,
 
 		out_port = i *(gK-1) + salida - 1; //esto es lo normalizado.*/
 
-		out_port = calculateDOR(nodo_destino, nodo_actual);
+		out_port = calculateDOR_routers(nodo_destino, nodo_actual);
 
 		//  printf("actual %d, destino %d, outport %d \n", nodo_actual, nodo_destino, out_port);
 		//fflush(stdout);
@@ -320,12 +413,13 @@ void dor_hyperx( const Router *r, const Flit *f, int in_channel,
 	outputs->AddRange( out_port , vcBegin, vcEnd );
 }
 
-//FIXME: THIS IS A WRONG!
+//FIXME: THIS IS WRONG FOR N>2!
 void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 	OutputSet *outputs, bool inject )
 	{
 
 		int vcBegin = 0, vcEnd = gNumVCs-1;
+		int available_vcs = gNumVCs/2;
 
 		int out_port = -1;
 
@@ -344,7 +438,6 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
 			int dimension_salida = -1;
 			int min_occupancy = INT_MAX;
-			vector<int> creditos = r->FreeCredits();
 
 			if(in_channel >= gN * (gK-1)){ //inyeccion
 
@@ -368,18 +461,20 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 					}
 
 				}
-			
+				vcBegin = dimension_salida * available_vcs;
+				vcEnd = dimension_salida * available_vcs + available_vcs;
+
+
+			}else{
+				if(f->vc  >= available_vcs){
+					vcBegin += available_vcs;
+				}else{
+					vcEnd -= available_vcs;
+				}
 			}
 
 
 			assert(out_port != -1); //no deberia ser...
-
-
-			if(in_channel >= gN * (gK-1)){ //inyeccion
-				vcEnd -= gNumVCs/2;
-			}else{
-				vcBegin += gNumVCs/2;
-			}
 
 			//printf("entry: %d, start: %d, end: %d \n", f->vc, vcBegin, vcEnd);
 		}
@@ -450,7 +545,7 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 				vcBegin += gNumVCs/2;
 			}
 
-			printf("entry: %d, start: %d, end: %d \n", f->vc, vcBegin, vcEnd);
+			//printf("entry: %d, start: %d, end: %d \n", f->vc, vcBegin, vcEnd);
 		}
 
 
@@ -481,7 +576,7 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 
 			}else if(f->vc == vcEnd){
 
-				out_port = calculateDOR(nodo_destino, nodo_actual);
+				out_port = calculateDOR_routers(nodo_destino, nodo_actual);
 
 				vcBegin = vcEnd;
 
@@ -516,8 +611,8 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 
 				}
 
-				if(flits_disponibles_max <= 1){ //si no hay flits...
-					out_port = calculateDOR(nodo_destino, nodo_actual);
+				if(flits_disponibles_max <= 0){ //si no hay flits...
+					out_port = calculateDOR_routers(nodo_destino, nodo_actual);
 					vcEnd++;
 					vcBegin = vcEnd;
 				}
@@ -580,11 +675,11 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 					if(nodo_destino != nodo_actual) {
 
 						if(f->ph == 0) {
-							out_port = calculateDOR(nodo_intermedio, nodo_actual);
+							out_port = calculateDOR_routers(nodo_intermedio, nodo_actual);
 							vcEnd -= available_vcs;
 						} else {
 							assert(f->ph == 1);
-							out_port = calculateDOR(nodo_destino, nodo_actual);
+							out_port = calculateDOR_routers(nodo_destino, nodo_actual);
 							vcBegin += available_vcs;
 						}
 
@@ -602,8 +697,8 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 			}
 
 
-	/*    //same as ugal except uses xyyx routing
-			void ugal_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
+
+			void ugal_hyperx( const Router *r, const Flit *f, int in_channel,
 				OutputSet *outputs, bool inject )
 				{
 					// ( Traffic Class , Routing Order ) -> Virtual Channel Range
@@ -631,7 +726,7 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 
 					} else {
 
-						int dest  = flatfly_transformation(f->dest);
+						int dest  = f->dest; //flatfly_transformation(f->dest);
 
 						int rID =  r->GetID();
 						int _concentration = gC;
@@ -641,8 +736,7 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 						int _min_hop, _nonmin_hop, _min_queucnt, _nonmin_queucnt;
 						int threshold = 2;
 
-
-						if ( in_channel < gC ){ //ESTO ESTA MAL, ESTA VIEJO
+						if ( in_channel >= (gK-1)*gN ){ //inyección
 							if(gTrace){
 								cout<<"New Flit "<<f->src<<endl;
 							}
@@ -671,56 +765,43 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 							dest = f->intm;
 						}
 
-						if (dest >= rID*_concentration && dest < (rID+1)*_concentration) { //LLEGA A UN NODO DESTINO, PERO LA CONDICION ES BASURA
+
+						if(calculateRouter(dest) == rID ){ //if (dest >= rID*_concentration && dest < (rID+1)*_concentration) {
+
 							if (f->ph == 1) {
 								f->ph = 2;
-								dest = flatfly_transformation(f->dest);
+								dest = f->dest; //flatfly_transformation(f->dest);
 								if (debug)   cout << "      done routing to intermediate ";
 							}
 							else  {
 								found = 1;
-								out_port = dest % gC;
+								out_port = gN * (gK -1) + calculateExitPort(dest); //dest % gC;
 								if (debug)   cout << "      final routing to destination ";
 							}
 						}
 
-						if (!found) { //SI NO SE HA LLEGAO AL FINAL
-
-							int const xy_available_vcs = (vcEnd - vcBegin + 1) / 2;
-							assert(xy_available_vcs > 0);
-
-							// randomly select dimension order at first hop
-							bool x_then_y = ((in_channel < gC) ?
-							(RandomInt(1) > 0) :
-							(f->vc < (vcBegin + xy_available_vcs)));
+						if (!found) {
 
 							if (f->ph == 0) {
-								//find the min port and min distance
-								_min_hop = find_distance(flatfly_transformation(f->src),dest);
-								if(x_then_y){
-									tmp_out_port =  flatfly_outport(dest, rID);
-								} else {
-									tmp_out_port =  flatfly_outport_yx(dest, rID);
-								}
+								_min_hop = find_distance_hyperx(f->src,dest);
+								_ran_intm = find_ran_intm_hyperx(f->src, dest);
+								tmp_out_port = calculateDOR_ugal(dest, rID); //flatfly_outport(dest, rID);
 								if (f->watch){
-									cout << " MIN tmp_out_port: " << tmp_out_port;
+									*gWatchOut << GetSimTime() << " | " << r->FullName() << " | "
+									<< " MIN tmp_out_port: " << tmp_out_port;
 								}
-								//sum over all vcs of that port
+
 								_min_queucnt =   r->GetUsedCredit(tmp_out_port);
 
-								//find the nonmin router, nonmin port, nonmin count
-								_ran_intm = find_ran_intm(flatfly_transformation(f->src), dest);
-								_nonmin_hop = find_distance(flatfly_transformation(f->src),_ran_intm) +    find_distance(_ran_intm, dest);
-								if(x_then_y){
-									tmp_out_port =  flatfly_outport(_ran_intm, rID);
-								} else {
-									tmp_out_port =  flatfly_outport_yx(_ran_intm, rID);
-								}
+								_nonmin_hop = find_distance_hyperx(f->src,_ran_intm) +    find_distance_hyperx(_ran_intm, dest);
+								tmp_out_port =  calculateDOR_ugal(_ran_intm, rID); //flatfly_outport(_ran_intm, rID);
 
 								if (f->watch){
-									cout << " NONMIN tmp_out_port: " << tmp_out_port << endl;
+									*gWatchOut << GetSimTime() << " | " << r->FullName() << " | "
+									<< " NONMIN tmp_out_port: " << tmp_out_port << endl;
 								}
-								if (_ran_intm >= rID*_concentration && _ran_intm < (rID+1)*_concentration) {
+
+								if(calculateRouter(_ran_intm) == rID){//if (_ran_intm >= rID*_concentration && _ran_intm < (rID+1)*_concentration) { //si ya estamos en intermedio pues fijo vamos minimo
 									_nonmin_queucnt = numeric_limits<int>::max();
 								} else  {
 									_nonmin_queucnt =   r->GetUsedCredit(tmp_out_port);
@@ -740,37 +821,26 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 									f->ph = 1;
 									f->intm = _ran_intm;
 									dest = f->intm;
-									if (dest >= rID*_concentration && dest < (rID+1)*_concentration) {
+									if(calculateRouter(dest) == rID){//if (dest >= rID*_concentration && dest < (rID+1)*_concentration) {
 										f->ph = 2;
-										dest = flatfly_transformation(f->dest);
+										dest = f->dest; //flatfly_transformation(f->dest);
 									}
 								}
 							}
 
-							//dest here should be == intm if ph==1, or dest == dest if ph == 2
-							if(x_then_y){
-								out_port =  flatfly_outport(dest, rID);
-								if(out_port >= gC) {
-									vcEnd -= xy_available_vcs;
-								}
-							} else {
-								out_port =  flatfly_outport_yx(dest, rID);
-								if(out_port >= gC) {
-									vcBegin += xy_available_vcs;
-								}
-							}
+							// find minimal correct dimension to route through
+							out_port = calculateDOR_ugal(dest, rID); // flatfly_outport(dest, rID);
 
 							// if we haven't reached our destination, restrict VCs appropriately to avoid routing deadlock
-							if(out_port >= gC) {
+							if(out_port < (gK-1)*gN) { //>= (gK-1)*gN
 
-								int const ph_available_vcs = xy_available_vcs / 2;
-								assert(ph_available_vcs > 0);
-
+								int const available_vcs = (vcEnd - vcBegin + 1) / 2;
+								assert(available_vcs > 0);
 								if(f->ph == 1) {
-									vcEnd -= ph_available_vcs;
+									vcEnd -= available_vcs;
 								} else {
 									assert(f->ph == 2);
-									vcBegin += ph_available_vcs;
+									vcBegin += available_vcs;
 								}
 							}
 
@@ -790,11 +860,13 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 						}
 
 						if (debug) cout << "        through output port : " << out_port << endl;
-						if(gTrace){cout<<"Outport "<<out_port<<endl;cout<<"Stop Mark"<<endl;}
-
+						if(gTrace) {
+							cout<<"Outport "<<out_port<<endl;
+							cout<<"Stop Mark"<<endl;
+						}
 					}
 
 					outputs->Clear( );
 
 					outputs->AddRange( out_port , vcBegin, vcEnd );
-				}*/
+				}

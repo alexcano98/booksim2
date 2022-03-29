@@ -82,7 +82,7 @@ void valiant_flatfly( const Router *r, const Flit *f, int in_channel,
 void adaptative_dor_exit_flatfly( const Router *r, const Flit *f, int in_channel,
         OutputSet *outputs, bool inject );
 
-void minimal_ladder_adaptive_flatfly( const Router *r, const Flit *f, int in_channel,
+void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel,
         OutputSet *outputs, bool inject );
 
 int find_distance (int src, int dest);

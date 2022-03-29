@@ -39,6 +39,7 @@ class Hyperx : public Network {
   int _k;
   int _n;
   int _c;
+  int _xr;
 
   void _ComputeSize( const Configuration &config );
   void _BuildNet( const Configuration &config );
@@ -58,7 +59,10 @@ public:
   void InsertRandomFaults( const Configuration &config );
   int calculateRouter(int node);
   int calculateExitPort(int node);
-  int calculateDOR(int nodo_destino, int nodo_actual);
+  int calculateDOR_routers(int nodo_destino, int nodo_actual);
+  int calculateDOR_ugal(int inyector_destino, int nodo_actual);
+  int find_distance_hyperx (int src, int dest);
+  int find_ran_intm_hyperx (int src, int dest);
 
 
 };
@@ -67,7 +71,7 @@ void dor_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outp
 void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void adaptive_dor_exit_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void valiant_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
-void ugal_xyyx_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
+void ugal_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 
 
