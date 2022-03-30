@@ -75,8 +75,7 @@ do
 
         #/usr/bin/time --verbose -o ./time_results/sim_${inj_rate}.time
         # Create the sbatch body
-        echo " ${BOOKSIM_HOME}/booksim injection_rate=${inj_rate}
-         traffic=${traffic} routing_function=${routing}" >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
+        echo " ${BOOKSIM_HOME}/booksim ${CONFIG_FILE} injection_rate=${inj_rate} traffic=${traffic} routing_function=${routing} > ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out" >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
 
         # Submit the sbatch
         echo "Submitting sbatch ${traffic}_sim_${inj_rate}_${routing}.sbatch"
@@ -86,7 +85,7 @@ do
         mv ${traffic}_sim_${inj_rate}_${routing}.sbatch ./sbatch_archive/
 
         #echo $inj_rate
-        ./src/booksim ${CONFIG_FILE} injection_rate="${inj_rate}" traffic="${traffic}" routing_function="${routing}" >> ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out
+        #./src/booksim ${CONFIG_FILE} injection_rate="${inj_rate}" traffic="${traffic}" routing_function="${routing}" >> ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out
         echo "Done: ${inj_rate}, ${routing}, ${traffic}"
 
       done
