@@ -57,34 +57,37 @@ for traffic in `cat ${PARAMS}/traffics` #extremely bbuggy
 do
   if ! [ -d "${OUT_DIR}/${traffic}" ]; then
     mkdir -p ${OUT_DIR}/${traffic}
-    for inj_rate in `cat ${PARAMS}/injection_rates` #extremely bbuggy
+    
+    for routing in `cat ${PARAMS}/routings` #extremely bbuggy
     do
 
-      for routing in `cat ${PARAMS}/routings` #extremely bbuggy
+      echo "#!/bin/bash
+      #SBATCH --job-name=booksim
+      #SBATCH -D .
+      #SBATCH --output= $(pwd)/${OUT_DIR}/bs/sim_${routing}_logs.out
+      #SBATCH --error= $(pwd)/${OUT_DIR}/bs/sim_${routing}_logs.err
+      #SBATCH --cpus-per-task=1
+      #SBATCH --ntasks=1
+      #SBATCH --time=5-11:59:59" > ${traffic}_sim_${routing}.sbatch
+
+      for inj_rate in `cat ${PARAMS}/injection_rates` #extremely bbuggy
       do
-
-        echo "#!/bin/bash
-        #SBATCH --job-name=booksim
-        #SBATCH -D .
-        #SBATCH --output= ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}_logs.out
-        #SBATCH --error=${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}_logs.err
-        #SBATCH --cpus-per-task=1
-        #SBATCH --ntasks=1
-        #SBATCH --time=5-11:59:59" > ${traffic}_sim_${inj_rate}_${routing}.sbatch
-
-        echo " ${BOOKSIM_HOME}/booksim injection_rate=${inj_rate} traffic=${traffic} routing_function=${routing} >  ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out " >> ${traffic}_sim_${routing}.sh
+        echo " ${BOOKSIM_HOME}/booksim ${CONFIG_FILE} injection_rate=${inj_rate} traffic=${traffic} routing_function=${routing} >  ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out " >> ${traffic}_sim_${routing}.sh
       done
 
-        echo "sh ${traffic}_sim_${routing}.sh" >> ${traffic}_sim_${inj_rate}.sbatch
+        echo "sh ${traffic}_sim_${routing}.sh" >> ${traffic}_sim_${routing}.sbatch
         
         # Submit the sbatch
         echo "Submitting sbatch ${traffic}_sim_${routing}.sbatch"
         sbatch ${traffic}_sim_${routing}.sbatch
 
         # Archive the sbatch
-        mv ${traffic}_sim_${inj_rate}_${routing}.sbatch ./sbatch_archive/
-        rm ${traffic}_sim_${routing}.sh
+        mv ${traffic}_sim_${routing}.sbatch ./sbatch_archive/
+        #rm ${traffic}_sim_${routing}.sh
 
     done
   fi
 done
+
+
+
