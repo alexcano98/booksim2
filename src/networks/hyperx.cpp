@@ -418,6 +418,7 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 	OutputSet *outputs, bool inject )
 	{
 
+		assert(gN  == 2);
 		int vcBegin = 0, vcEnd = gNumVCs-1;
 		int available_vcs = gNumVCs/2;
 
@@ -583,7 +584,10 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 			}else{
 
 				vcEnd--; //quitamos el ultimo canal.
-				int flits_disponibles_max = 0;
+				int dim_flits_max = -1;
+
+				int canal_salida[gN];
+				int max_creditos[gN];
 
 				for(int i = 0; i< gN ; i++){
 
@@ -592,16 +596,27 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 					if(salida != 0){ //Si hay que recorrer esta salida...
 
 						int sitios_libres = 0;
+						
 						int puerto = i *(gK-1) + salida - 1;
 						vector<int> creditos = r->FreeCredits();
+						int max_canal = -1;
 
 						for(int canal = 0; canal < (gNumVCs -1); canal++){
-							sitios_libres += creditos[puerto * (gNumVCs) + canal];
+							int ncredito = creditos[puerto * (gNumVCs) + canal];
+
+							if(ncredito > 1){
+								if(ncredito > max_canal){
+									max_creditos[i] = ncredito;
+									canal_salida[i] = canal;
+									max_canal = ncredito;
+								}
+							}
+							
 						}
 
-						if(sitios_libres > flits_disponibles_max){
+						if(dim_flits_max == -1 || max_creditos[i] >= max_creditos[dim_flits_max]){
 
-							flits_disponibles_max = sitios_libres;
+							dim_flits_max = i;
 							out_port = puerto; //esto es lo normalizado.
 							break; // no hace falta coger el maximo en principio....
 
@@ -611,10 +626,13 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 
 				}
 
-				if(flits_disponibles_max <= 0){ //si no hay flits...
+				if(max_creditos[dim_flits_max] <= 1){ //si no hay flits...
 					out_port = calculateDOR_routers(nodo_destino, nodo_actual);
 					vcEnd++;
 					vcBegin = vcEnd;
+				}else{
+					vcBegin = canal_salida[dim_flits_max];
+					vcEnd = canal_salida[dim_flits_max];
 				}
 
 			}

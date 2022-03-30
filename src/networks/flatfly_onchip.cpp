@@ -458,19 +458,28 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel,
           int credit_xy = 0;
           int credit_yx = 0;
 
+          int canal = 0;
           vector<int> creditos = r->FreeCredits();
 
-          for(int canal = 0; canal < (gNumVCs -1); canal++){
+          for(canal = 0; canal < (gNumVCs -1); canal++){
 
-            credit_xy += creditos[out_port_xy * gNumVCs + canal]; //antes estaba -1 pero creo que asi mejor
-            credit_yx += creditos[out_port_yx * gNumVCs + canal];
+            if (creditos[out_port_xy * gNumVCs + canal] > 1){ //antes estaba -1 pero creo que asi mejor
+              credit_xy = 1;
+            } 
+            if (creditos[out_port_yx * gNumVCs + canal] > 1){
+              credit_yx = 1;
+            }
           }
 
-          if(credit_xy > 0 ) { //primero con orden en xy gNumVCs
+          if(credit_xy > credit_yx && credit_xy < 1) { //primero con orden en xy gNumVCs
             out_port = out_port_xy;
+            vcBegin = canal;
+            vcEnd = canal;
 
-          } else if(credit_yx > 0 ) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
+          } else if(credit_yx > credit_xy && credit_yx < 1) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
             out_port = out_port_yx;
+            vcBegin = canal;
+            vcEnd = canal;
 
           } else { //canal de escape DOR. -> xy
             out_port = out_port_xy;
