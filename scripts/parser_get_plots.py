@@ -127,10 +127,14 @@ def main():
             worst_flits_latency_list[routing] = worst_flits_latency
             worst_accepted_flits_list[routing] = worst_accepted_flits
 
+        #markers matploblib
+        markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd', 'P', 'X']
 
-
+        #assign a marker per routing
         data = pd.DataFrame(flits_latency_list)
-        data.plot(x='injected_rate', y=routings, legend=True, title='Flits latency')
+        for i in range(len(routings)):
+            data.plot(x='injected_rate', y=routings[i], legend=True, title='Flits latency', marker=markers[i])
+            
         plt.ylabel('Latency (cycles)')
         plt.xlabel('Injected rate (Flits/cycle/node)')
         plt.title('Flits latency (cycles) [TP={}]'.format(traffic_pattern))
