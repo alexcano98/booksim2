@@ -128,60 +128,83 @@ def main():
             worst_accepted_flits_list[routing] = worst_accepted_flits
 
         #markers matploblib
-        markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd', 'P', 'X']
+        markers = ['o', '*','^', 's', 'h', 'H', 'D', 'd', 'P', 'X']
 
         #assign a marker per routing
         data = pd.DataFrame(flits_latency_list)
-        for i in range(len(routings)):
-            data.plot(x='injected_rate', y=routings[i], legend=True, title='Flits latency', marker=markers[i])
-            
+        data.plot(x='injected_rate', y=routings, legend=True, title='Flits latency')
+
+        ax = data.plot(kind='line')
+        for i, line in enumerate(ax.get_lines()):
+            line.set_marker(markers[i])
+
         plt.ylabel('Latency (cycles)')
         plt.xlabel('Injected rate (Flits/cycle/node)')
         plt.title('Flits latency (cycles) [TP={}]'.format(traffic_pattern))
-        plt.xticks(np.arange(0, 1.1, 0.1))
         plt.grid()
-        #plt.show()
         plt.savefig('./plots/'+topology+'_flits_latency_'+t+'.png')
         print("Flits latency plot created")
+
+        #PLOT 2
 
         data = pd.DataFrame(worst_flits_latency_list)
         data.plot(x='injected_rate', y=routings, legend=True, title='Worst flits latency')
         plt.ylabel('Latency (cycles)')
         plt.xlabel('Injected rate (Flits/cycle/node)')
         plt.title('Flits latency (cycles) [TP={}]'.format(traffic_pattern))
-        plt.xticks(np.arange(0, 1.1, 0.1))
+        #plt.xticks(np.arange(0, 1.1, 0.1))
+        ax = data.plot(kind='line')
+        for i, line in enumerate(ax.get_lines()):
+            line.set_marker(markers[i])
+
         plt.grid()
         #plt.show()
         plt.savefig('./plots/'+topology+'_worst_flits_latency_'+t+'.png')
         print("Flits latency plot created")
 
-
+         #PLOT 3
         data = pd.DataFrame(accepted_flits_list)
         data.plot(x='injected_rate', y=routings, legend=True, title='Throughput')
+
+        ax = data.plot(kind='line')
+        for i, line in enumerate(ax.get_lines()):
+            line.set_marker(markers[i])
+
         plt.ylabel('Accepted flits')
         plt.xlabel('Injected Rate (Flits/cycle/node)')
         plt.title('Throughput [TP={}]'.format(traffic_pattern))
-        plt.xticks(np.arange(0, 1.1, 0.1))
-        plt.yticks(np.arange(0, 1.1, 0.1))
+        
         plt.grid()
         #plt.show()
         plt.savefig('./plots/'+topology+'_throughput_'+t+'.png')
         print("Throughput plot created")
 
+         #PLOT 4
         data = pd.DataFrame(worst_accepted_flits_list)
         data.plot(x='injected_rate', y=routings, legend=True, title='Worst throughput')
+
+        ax = data.plot(kind='line')
+        for i, line in enumerate(ax.get_lines()):
+            line.set_marker(markers[i])
+
+
         plt.ylabel('Accepted flits')
         plt.xlabel('Injected Rate (Flits/cycle/node)')
         plt.title('Throughput [TP={}]'.format(traffic_pattern))
-        plt.xticks(np.arange(0, 1.1, 0.1))
-        plt.yticks(np.arange(0, 1.1, 0.1))
+
         plt.grid()
         #plt.show()
         plt.savefig('./plots/'+topology+'_worst_throughput_'+t+'.png')
         print("Throughput plot created")
 
+        #PLOT 5
         data = pd.DataFrame(hops_avg_list)
         data.plot(x='injected_rate', y=routings, legend=True, title='Hops average')
+
+        ax = data.plot(kind='line')
+        for i, line in enumerate(ax.get_lines()):
+            line.set_marker(markers[i])
+
         plt.ylabel('Avg hops')
         plt.xlabel('Injected Rate (Flits/cycle/node)')
         plt.title('Hops [TP={}]'.format(traffic_pattern))
