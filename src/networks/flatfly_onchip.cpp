@@ -358,8 +358,7 @@ int getNumSaltos(int source, int dest){
 }
 
 //num_vcs == diameter of the network
-void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel,
-  OutputSet *outputs, bool inject )
+void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
   {
 
     int vcBegin = 0, vcEnd = gNumVCs-1;
@@ -402,9 +401,9 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel,
 
 
         if(credit_xy > credit_yx) {
-          out_port = out_port_xy;
-        } else {
           out_port = out_port_yx;
+        } else {
+          out_port = out_port_xy;
         }
 
         if(gNumVCs != available_vcs){
