@@ -33,3 +33,11 @@ sim_type = latency;
 
 injection_rate = 0.5;
 traffic = uniform;
+
+credit_delay = 0;
+routing_delay = 0;
+vc_alloc_delay = 1;
+sw_alloc_delay = 1;
+st_prepare_delay = 0;
+st_final_delay = 1;
+speculative = 1;

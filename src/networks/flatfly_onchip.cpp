@@ -342,6 +342,20 @@ void FlatFlyOnChip::RegisterRoutingFunctions(){
 }
 
 
+int getNumSaltos(int source, int dest){
+  int saltos = 0;
+
+  if( (source % gK) != (dest % gK)){
+     saltos++;
+  }
+
+  if( (source / gK) != (dest / gK) ){
+     saltos++;
+  }
+
+  return saltos;
+
+}
 
 //num_vcs == diameter of the network
 void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel,
@@ -367,7 +381,17 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel,
 
       } else {
 
-        int const available_vcs = (vcEnd - vcBegin + 1) / 2;
+        int saltos_src = getNumSaltos(targetr, (int)(flatfly_transformation(f->src)/gC) );
+      //  int saltos_curr = getNumSaltos(targetr, r->GetID());
+
+        /*printf("%d\n", saltos);
+        printf("%d %d\n", targetr, r->GetID());
+        fflush(stdout);*/
+
+        int const available_vcs = (vcEnd - vcBegin + 1) / saltos_src;
+        //printf("%d", available_vcs);
+        //fflush(stdout);
+
         assert(available_vcs > 0);
 
         int out_port_xy =  flatfly_outport(dest, r->GetID());
@@ -383,13 +407,17 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel,
           out_port = out_port_yx;
         }
 
-        if(in_channel < gC){ //ESTO SOLO VALE PARA DOS DIMENSIONES....
-          vcEnd = vcBegin + available_vcs -1;
-          vcBegin = vcBegin;
+        if(gNumVCs != available_vcs){
 
-        }else{
-          vcEnd = vcEnd; //pa dejarlo claro
-          vcBegin = vcBegin + available_vcs;
+          if(in_channel < gC){ //ESTO SOLO VALE PARA DOS DIMENSIONES....
+            vcEnd = vcBegin + available_vcs -1;
+            vcBegin = vcBegin;
+
+          }else{
+            vcEnd = vcEnd; //pa dejarlo claro
+            vcBegin = vcBegin;
+          }
+
         }
 
 
@@ -401,6 +429,26 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel,
     outputs->Clear( );
 
     outputs->AddRange( out_port , vcBegin, vcEnd );
+  }
+
+  int getCreditOutportVC(int outport, int vc, vector<int> creditos){
+    return creditos[outport * gNumVCs + vc ];
+  }
+
+  int maxCreditsVC(int outport, int canales, vector<int> creditos){
+
+    int vc = -1;
+    int max_creditos = -1;
+    for(int i = 0; i < canales; i++){
+      int c = getCreditOutportVC(outport, i, creditos);
+
+      if(c > max_creditos ){
+        max_creditos = c;
+        vc = i;
+      }
+    }
+
+    return vc;
   }
 
   void adaptative_dor_exit_flatfly( const Router *r, const Flit *f, int in_channel,
@@ -434,9 +482,6 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel,
 
       } else { //si no se inyecta
 
-        //printf("%d, end: %d \n", f->vc, vcEnd);
-        //fflush(stdout);
-        //assert(f->vc != vcEnd);
         int dest = flatfly_transformation(f->dest);
         int targetr = (int)(dest/gC);
 
@@ -455,31 +500,23 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel,
           int out_port_xy =  flatfly_outport(dest, r->GetID());
           int out_port_yx =  flatfly_outport_yx(dest, r->GetID());
 
-          int credit_xy = 0;
-          int credit_yx = 0;
-
-          int canal = 0;
           vector<int> creditos = r->FreeCredits();
 
-          for(canal = 0; canal < (gNumVCs -1); canal++){
+          int canal_xy = maxCreditsVC(out_port_xy, gNumVCs -1, creditos);
+          int canal_yx = maxCreditsVC(out_port_yx, gNumVCs -1, creditos);
 
-            if (creditos[out_port_xy * gNumVCs + canal] > 1){ //antes estaba -1 pero creo que asi mejor
-              credit_xy = 1;
-            } 
-            if (creditos[out_port_yx * gNumVCs + canal] > 1){
-              credit_yx = 1;
-            }
-          }
+          int credits_canal_xy = getCreditOutportVC(out_port_xy, canal_xy, creditos);
+          int credits_canal_yx = getCreditOutportVC(out_port_yx, canal_yx, creditos);
 
-          if(credit_xy > credit_yx && credit_xy < 1) { //primero con orden en xy gNumVCs
+          if(credits_canal_xy >= credits_canal_yx && credits_canal_xy < 0) { //primero con orden en xy gNumVCs
             out_port = out_port_xy;
-            vcBegin = canal;
-            vcEnd = canal;
+            vcBegin = canal_xy;
+            vcEnd = canal_xy;
 
-          } else if(credit_yx > credit_xy && credit_yx < 1) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
+          } else if(credits_canal_yx > credits_canal_xy && credits_canal_yx < 0) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
             out_port = out_port_yx;
-            vcBegin = canal;
-            vcEnd = canal;
+            vcBegin = canal_yx;
+            vcEnd = canal_yx;
 
           } else { //canal de escape DOR. -> xy
             out_port = out_port_xy;
