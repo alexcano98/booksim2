@@ -28,8 +28,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <sstream>
 #include <ctime>
+#include <cmath>
 #include "random_utils.hpp"
 #include "traffic.hpp"
+#include "misc_utils.hpp"
+#include "globals.hpp"
+
 
 TrafficPattern::TrafficPattern(int nodes)
 : _nodes(nodes)
@@ -131,9 +135,11 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
       result = new BadPermDFlyTrafficPattern(nodes, k, n);
     } else if( (pattern_name == "tornado_alex_half")
             || (pattern_name == "tornado_alex_xy")
-            ||(pattern_name == "complement_reverse_2d")
+            || (pattern_name == "tornado_alex_ndim")
+            || (pattern_name == "complement_reverse_2d")
+            || (pattern_name == "complement_reverse_2d_hyperx")
             || (pattern_name == "tornado_alex")
-            ||(pattern_name == "tornado")
+            || (pattern_name == "tornado")
             || (pattern_name == "neighbor")
             || (pattern_name == "badperm_yarc") ) {
 
@@ -179,7 +185,11 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
       } else if(pattern_name == "tornado_alex") {
         result = new TornadoAlexTrafficPattern(nodes, k, n, xr);
       } else if(pattern_name == "tornado_alex_xy") {
+        assert(k == xr *xr); //esto es para asegurar que no pillo la hyperx aqui...
         result = new TornadoXYAlexTrafficPattern(nodes, k, n, xr);
+      } else if(pattern_name == "tornado_alex_ndim") {
+        assert(k == xr);
+        result = new TornadoNdimAlexTrafficPattern(nodes, k, n, xr);
       } else if(pattern_name == "tornado_alex_half") {
         result = new TornadoHalfAlexTrafficPattern(nodes, k, n, xr);
       } else if(pattern_name == "complement_reverse_2d") {
@@ -355,6 +365,28 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
 
 
     return result;
+  }
+
+    TornadoNdimAlexTrafficPattern::TornadoNdimAlexTrafficPattern(int nodes, int k, int n, int xr)
+  : DigitPermutationTrafficPattern(nodes, k, n, xr)
+  {
+
+  }
+
+  int TornadoNdimAlexTrafficPattern::dest(int source)
+  {
+    assert((source >= 0) && (source < _nodes));
+
+    int result = 0;
+    int salto = (( _k - 1) / 2); // * _xr
+    int source_router = source / _xr;
+    
+    for(int i = 0; i< _n; i++){
+      
+      result = (source_router + salto * powi(_k, i)) % powi(_k, i +1) ;
+    }
+    
+    return (result * _xr + source % _xr);
   }
 
 

@@ -271,6 +271,30 @@ int calculateDOR_routers(int nodo_destino, int nodo_actual){
 
 }
 
+int calculateDORYX_routers(int nodo_destino, int nodo_actual){
+
+	int salida = 0;
+	int i = 0;
+	int dim_help = -1;
+
+	for(i = 0; i< gN ; i++){
+
+		int temp = (node_vectors[nodo_destino * gN+i] - node_vectors[nodo_actual * gN+i] + gK) %gK;
+		
+		if(temp != 0){
+			salida = temp;
+			dim_help = i;
+		} 
+	}
+
+	//printf("%d, %d\n", nodo_destino,nodo_actual);
+	//fflush(stdout);
+	assert(salida != 0 && dim_help != -1); //esto se puede cambiar, meter aqui la salida tmbn
+
+	return dim_help *(gK-1) + salida - 1; //esto es lo normalizado.
+
+}
+
 int calculateDOR_ugal(int inyector_destino, int nodo_actual){
 
 	int salida = 0;
@@ -420,7 +444,7 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
 		assert(gN  == 2);
 		int vcBegin = 0, vcEnd = gNumVCs-1;
-		int available_vcs = gNumVCs/gN;
+		int available_vcs = gNumVCs/2;
 
 		int out_port = -1;
 
@@ -444,33 +468,37 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
 					for(int i = 0; i< gN ; i++){
 
-					int salida = (node_vectors[nodo_destino * gN+i] - node_vectors[nodo_actual * gN+i] + gK) %gK;
+						int salida = (node_vectors[nodo_destino * gN+i] - node_vectors[nodo_actual * gN+i] + gK) %gK;
 
-					if(salida != 0){ //Si hay que recorrer esta salida...
+						if(salida != 0){ //Si hay que recorrer esta salida...
 
-						int occupancy = 0;
-						int puerto = i *(gK-1) + salida - 1;
+							int occupancy = 0;
+							int puerto = i *(gK-1) + salida - 1;
 
-						occupancy = r->GetUsedCredit(puerto);
+							occupancy = r->GetUsedCredit(puerto);
 
-						if(occupancy < min_occupancy){
-							min_occupancy = occupancy;
-							dimension_salida = i;
-							out_port = puerto; //esto es lo normalizado.
+							if(occupancy < min_occupancy){
+								min_occupancy = occupancy;
+								dimension_salida = i;
+								out_port = puerto; //esto es lo normalizado.
+							}
+
 						}
 
 					}
-
-				}
-				/*vcBegin = dimension_salida * available_vcs;
-				vcEnd = dimension_salida * available_vcs + available_vcs;*/
+				vcBegin = dimension_salida * available_vcs;
+				vcEnd = dimension_salida * available_vcs + available_vcs -1;
 
 
 			}else{
+
 				if(f->vc  >= available_vcs){
 					//TODO - PONER LOS OUTPORTS
 					vcBegin += available_vcs;
+					out_port = calculateDORYX_routers(nodo_destino, nodo_actual);
 				}else{
+
+					out_port = calculateDOR_routers(nodo_destino, nodo_actual);
 					vcEnd -= available_vcs;
 				}
 			}
@@ -521,10 +549,6 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 
 					int occupancy = 0;
 					int puerto = i *(gK-1) + salida - 1;
-
-					/*for(int canal = vcBegin; canal < vcEnd; canal++){
-						sitios_libres += creditos[puerto*gNumVCs + canal];
-					}*/
 
 					occupancy = r->GetUsedCredit(puerto);
 
