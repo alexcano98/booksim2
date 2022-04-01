@@ -370,7 +370,7 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
     assert((source >= 0) && (source < _nodes));
 
     int source_x = (source % (_xr * _k)); //proyeccion
-    int salto = (( _k - 1) / 2) * _xr + (source_x % 2); //salto en routers * nodos por router
+    int salto = (( _k - 1) / 2) * _xr + (source_x % 2)* _xr; //salto en routers * nodos por router
     int result = 0;
 
     if( (source_x + salto) >= (_xr * _k)){ //hacia atras
