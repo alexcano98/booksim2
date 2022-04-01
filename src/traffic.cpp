@@ -377,13 +377,13 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
   {
     assert((source >= 0) && (source < _nodes));
 
-    int result = 0;
+    int result = source;
     int salto = (( _k - 1) / 2); // * _xr
     int source_router = source / _xr;
     
     for(int i = 0; i< _n; i++){
       
-      result = (source_router + salto * powi(_k, i)) % powi(_k, i +1) ;
+      result =  (result + salto * powi(_k, i)) % powi(_k, i +1) ;
     }
     
     return (result * _xr + source % _xr);
