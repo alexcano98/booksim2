@@ -555,6 +555,27 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 		outputs->AddRange( out_port , vcBegin, vcEnd );
 	}
 
+	
+  int getCreditOutportVC_hyperx(int outport, int vc, vector<int> creditos){
+    return creditos[outport * gNumVCs + vc ];
+  }
+
+  int maxCreditsVC_hyperx(int outport, int canales, vector<int> creditos){
+
+    int vc = -1;
+    int max_creditos = -1;
+    for(int i = 0; i < canales; i++){
+      int c = getCreditOutportVC_hyperx(outport, i, creditos);
+
+      if(c > max_creditos ){
+        max_creditos = c;
+        vc = i;
+      }
+    }
+
+    return vc;
+  }
+
 
 
 	void adaptive_dor_exit_hyperx( const Router *r, const Flit *f, int in_channel,
@@ -562,6 +583,23 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 		{
 
 			int vcBegin = 0, vcEnd = gNumVCs-1; //quitamos el último canal
+
+			 if ( f->type == Flit::READ_REQUEST ) {
+				vcBegin = gReadReqBeginVC;
+				vcEnd = gReadReqEndVC;
+			} else if ( f->type == Flit::WRITE_REQUEST ) {
+				vcBegin = gWriteReqBeginVC;
+				vcEnd = gWriteReqEndVC;
+			} else if ( f->type ==  Flit::READ_REPLY ) {
+				vcBegin = gReadReplyBeginVC;
+				vcEnd = gReadReplyEndVC;
+			} else if ( f->type ==  Flit::WRITE_REPLY ) {
+				vcBegin = gWriteReplyBeginVC;
+				vcEnd = gWriteReplyEndVC;
+			}
+			assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
+
+
 			int out_port = -1;
 
 			int nodo_actual = r->GetID();
@@ -584,55 +622,43 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 			}else{
 
 				vcEnd--; //quitamos el ultimo canal.
-				int dim_flits_max = -1;
 
-				int canal_salida[gN];
-				int max_creditos[gN];
+				int vc_salida;
+				int max_creditos_total = -1;
 
 				for(int i = 0; i< gN ; i++){
 
 					int salida = (node_vectors[nodo_destino * gN+i] - node_vectors[nodo_actual * gN+i] + gK) %gK;
 
 					if(salida != 0){ //Si hay que recorrer esta salida...
-
-						int sitios_libres = 0;
 						
 						int puerto = i *(gK-1) + salida - 1;
+						
 						vector<int> creditos = r->FreeCredits();
-						int max_canal = -1;
+						
+						int canalvc = maxCreditsVC_hyperx(puerto, gNumVCs -1, creditos);
+						int max_cred = getCreditOutportVC_hyperx(puerto, canalvc, creditos);
 
-						for(int canal = 0; canal < (gNumVCs -1); canal++){
-							int ncredito = creditos[puerto * (gNumVCs) + canal];
-
-							if(ncredito > 1){
-								if(ncredito > max_canal){
-									max_creditos[i] = ncredito;
-									canal_salida[i] = canal;
-									max_canal = ncredito;
-								}
-							}
-							
-						}
-
-						if(dim_flits_max == -1 || max_creditos[i] >= max_creditos[dim_flits_max]){
-
-							dim_flits_max = i;
-							out_port = puerto; //esto es lo normalizado.
-							break; // no hace falta coger el maximo en principio....
-
+						if(max_cred >= max_creditos_total){
+							max_creditos_total = max_cred;
+							vc_salida = canalvc;
+							out_port = puerto;
 						}
 
 					}
 
 				}
 
-				if(max_creditos[dim_flits_max] <= 1){ //si no hay flits...
+
+				assert(max_creditos_total != -1);
+
+				if(max_creditos_total <= 0){ //si no hay flits...
 					out_port = calculateDOR_routers(nodo_destino, nodo_actual);
 					vcEnd++;
 					vcBegin = vcEnd;
 				}else{
-					vcBegin = canal_salida[dim_flits_max];
-					vcEnd = canal_salida[dim_flits_max];
+					vcBegin = vc_salida;
+					vcEnd = vc_salida;
 				}
 
 			}

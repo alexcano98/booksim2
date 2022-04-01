@@ -509,12 +509,12 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel, 
           int credits_canal_xy = getCreditOutportVC(out_port_xy, canal_xy, creditos);
           int credits_canal_yx = getCreditOutportVC(out_port_yx, canal_yx, creditos);
 
-          if(credits_canal_xy >= credits_canal_yx && credits_canal_xy < 0) { //primero con orden en xy gNumVCs
+          if(credits_canal_xy >= credits_canal_yx && credits_canal_xy > 0) { //primero con orden en xy gNumVCs
             out_port = out_port_xy;
             vcBegin = canal_xy;
             vcEnd = canal_xy;
 
-          } else if(credits_canal_xy < credits_canal_yx && credits_canal_yx < 0) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
+          } else if(credits_canal_xy < credits_canal_yx && credits_canal_yx > 0) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
             out_port = out_port_yx;
             vcBegin = canal_yx;
             vcEnd = canal_yx;
