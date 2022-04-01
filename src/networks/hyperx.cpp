@@ -420,7 +420,7 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
 		assert(gN  == 2);
 		int vcBegin = 0, vcEnd = gNumVCs-1;
-		int available_vcs = gNumVCs/2;
+		int available_vcs = gNumVCs/gN;
 
 		int out_port = -1;
 
@@ -462,12 +462,13 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 					}
 
 				}
-				vcBegin = dimension_salida * available_vcs;
-				vcEnd = dimension_salida * available_vcs + available_vcs;
+				/*vcBegin = dimension_salida * available_vcs;
+				vcEnd = dimension_salida * available_vcs + available_vcs;*/
 
 
 			}else{
 				if(f->vc  >= available_vcs){
+					//TODO - PONER LOS OUTPORTS
 					vcBegin += available_vcs;
 				}else{
 					vcEnd -= available_vcs;
