@@ -65,17 +65,17 @@ do
 
         echo "#!/bin/bash
         #SBATCH --job-name=booksim
-        #SBATCH -D .
-        #SBATCH --output= ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out
-        #SBATCH --error= ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.err
         #SBATCH --cpus-per-task=1
         #SBATCH --ntasks=1
-        #SBATCH --time=1-11:59:59
-        #SBATCH --mem=5GB" > ${traffic}_sim_${inj_rate}_${routing}.sbatch
+        #SBATCH --time=UNLIMITED" > ${traffic}_sim_${inj_rate}_${routing}.sbatch
+
+        # --output=/home/alejandro/booksim2/${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out
+        # --error=/home/alejandro/booksim2/${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.err
+        # --mem=5GB
 
         #/usr/bin/time --verbose -o ./time_results/sim_${inj_rate}.time
         # Create the sbatch body
-        echo " ${BOOKSIM_HOME}/booksim ${CONFIG_FILE} injection_rate=${inj_rate} traffic=${traffic} routing_function=${routing} > ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out" >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
+        echo " ${BOOKSIM_HOME}/booksim ${CONFIG_FILE} injection_rate=${inj_rate} traffic=${traffic} routing_function=${routing} > ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out " >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
 
         # Submit the sbatch
         echo "Submitting sbatch ${traffic}_sim_${inj_rate}_${routing}.sbatch"

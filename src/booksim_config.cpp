@@ -55,7 +55,7 @@ BookSimConfig::BookSimConfig( )
   AddStrField( "routing_function", "none" );
 
   //simulator tries to correclty adjust latency for node/router placement 
-  _int_map["use_noc_latency"] = 1;
+  _int_map["use_noc_latency"] = 0; //esto estaba a 1 pero la desactivo para que no moleste
 
 
   //used for noc latency calcualtion for network with concentration

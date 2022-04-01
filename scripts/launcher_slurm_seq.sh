@@ -21,8 +21,8 @@ PURGE="${3:-0}"
 echo "${PURGE}"
 
 # Check the number of arguments
-if [ $# -ne 3 ]; then
-    echo "Usage: $0 <CONFIG_FILE> <PARAMS> <PURGE>"
+if [ $# -ne 4 ]; then
+    echo "Usage: $0 <CONFIG_FILE> <PARAMS> <PURGE> <TOPOLOGY>"
     exit 1
 fi
 
@@ -72,10 +72,10 @@ do
 
       for inj_rate in `cat ${PARAMS}/injection_rates` #extremely bbuggy
       do
-        echo " ${BOOKSIM_HOME}/booksim ${CONFIG_FILE} injection_rate=${inj_rate} traffic=${traffic} routing_function=${routing} >  ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out " >> ${traffic}_sim_${routing}.sh
+        echo " ${BOOKSIM_HOME}/booksim ${CONFIG_FILE} injection_rate=${inj_rate} traffic=${traffic} routing_function=${routing} >  ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out " >> ./${4}/${traffic}_sim_${routing}.sh
       done
 
-        echo "sh ${traffic}_sim_${routing}.sh" >> ${traffic}_sim_${routing}.sbatch
+        echo "sh ./${4}/${traffic}_sim_${routing}.sh" >> ${traffic}_sim_${routing}.sbatch
         
         # Submit the sbatch
         echo "Submitting sbatch ${traffic}_sim_${routing}.sbatch"
