@@ -95,3 +95,5 @@ sw_alloc_delay = 1;
 st_prepare_delay = 0;
 st_final_delay = 1;
 speculative = 1;
+
+seed=1;

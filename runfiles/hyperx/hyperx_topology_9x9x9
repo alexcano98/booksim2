@@ -46,18 +46,19 @@ use_noc_latency = 0;
 // x, y, specifies the arrangement of routers in x and y dim
 // xr, yr specifiies the arayment of clients in a router
 //
-topology = flatfly;
+topology = hyperx;
 subnets = 1;
 
-c  = 4;
-k  = 4;
+c  = 9;
+k  = 9;
 n  = 2;
 
-x = 4;
-y = 4;
 
-xr = 2;
-yr = 2;
+//x = 4;
+//y = 4;
+
+xr = 9;
+//yr = 2;
 
 
 //
@@ -67,8 +68,8 @@ yr = 2;
 routing_function =dor;
 
 //for injection mode
-injection_rate = 0.9;
-traffic = uniform;
+injection_rate = 0.95;
+traffic = tornado;
 //classes = 4;
 
 //latency: drains all packet, throughput:no drain?
@@ -95,5 +96,4 @@ st_prepare_delay = 0;
 st_final_delay = 1;
 speculative = 1;
 
-
-seed = 1;
+seed=1;
