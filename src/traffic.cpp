@@ -373,17 +373,36 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
 
   }
 
+
+  //Parece que ya va bien
   int TornadoNdimAlexTrafficPattern::dest(int source)
   {
     assert((source >= 0) && (source < _nodes));
 
-    int result = source;
+    //assert(false);
+    
     int salto = (( _k - 1) / 2); // * _xr
     int source_router = source / _xr;
-    
+    int result = source_router;
+
+
     for(int i = 0; i< _n; i++){
+      int proyeccion_salto  = (result /powi(_k, i) ) % _k;
+      int salto_help = salto;
+
+      if( (proyeccion_salto + salto) >= _k ){ //hacia detras
+
+        salto_help -=  _k; //lo cogemos hacia detras...
+        result += (salto_help * powi(_k, i));
+
+      }else{
+
+        result += (salto_help * powi(_k, i));
+
+      }
       
-      result =  (result + salto * powi(_k, i)) % powi(_k, i +1) ;
+      //result =  result + (salto * powi(_k, i) % powi(_k, i +1)); //Esta mal, hay que ver vcuando da el salto en la dimension
+                                                                  //no con el nodo global
     }
     
     return (result * _xr + source % _xr);

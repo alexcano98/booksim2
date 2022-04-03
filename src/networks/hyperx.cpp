@@ -444,7 +444,7 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
 		assert(gN  == 2);
 		int vcBegin = 0, vcEnd = gNumVCs-1;
-		int available_vcs = gNumVCs/2;
+		int available_vcs = gNumVCs/gN;
 
 		int out_port = -1;
 
@@ -466,43 +466,43 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 
 			if(in_channel >= gN * (gK-1)){ //inyeccion
 
-					for(int i = 0; i< gN ; i++){
+				for(int i = 0; i< gN ; i++){
 
-						int salida = (node_vectors[nodo_destino * gN+i] - node_vectors[nodo_actual * gN+i] + gK) %gK;
+					int salida = (node_vectors[nodo_destino * gN+i] - node_vectors[nodo_actual * gN+i] + gK) %gK;
 
-						if(salida != 0){ //Si hay que recorrer esta salida...
+					if(salida != 0){ //Si hay que recorrer esta salida...
 
-							int occupancy = 0;
-							int puerto = i *(gK-1) + salida - 1;
+						int puerto = i *(gK-1) + salida - 1;
+						int occupancy = r->GetUsedCredit(puerto);
 
-							occupancy = r->GetUsedCredit(puerto);
-
-							if(occupancy < min_occupancy){
-								min_occupancy = occupancy;
-								dimension_salida = i;
-								out_port = puerto; //esto es lo normalizado.
-							}
-
+						if(occupancy < min_occupancy){
+							min_occupancy = occupancy;
+							dimension_salida = i;
+							out_port = puerto; //esto es lo normalizado.
 						}
 
 					}
-				vcBegin = dimension_salida * available_vcs;
-				vcEnd = dimension_salida * available_vcs + available_vcs -1;
 
+				}
+			
 
-			}else{
+			}else{ //FIX THIS for n> 2
 
-				if(f->vc  >= available_vcs){
-					//TODO - PONER LOS OUTPORTS
-					vcBegin += available_vcs;
+				dimension_salida = f->vc / available_vcs;
+
+				if(dimension_salida == 1){
+					//vcBegin += available_vcs;
 					out_port = calculateDORYX_routers(nodo_destino, nodo_actual);
 				}else{
 
 					out_port = calculateDOR_routers(nodo_destino, nodo_actual);
-					vcEnd -= available_vcs;
+					//vcEnd -= available_vcs;
 				}
+
 			}
 
+			vcBegin = dimension_salida * available_vcs;
+			vcEnd = dimension_salida * available_vcs + available_vcs -1;
 
 			assert(out_port != -1); //no deberia ser...
 
