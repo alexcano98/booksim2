@@ -134,13 +134,6 @@ public:
   virtual int dest(int source);
 };
 
-class ComplementReverse3DTrafficPatternHyperx : public DigitPermutationTrafficPattern {
-public:
-  ComplementReverse3DTrafficPatternHyperx(int nodes, int k, int n, int xr = 1);
-  virtual int dest(int source);
-};
-
-
 class NeighborTrafficPattern : public DigitPermutationTrafficPattern {
 public:
   NeighborTrafficPattern(int nodes, int k, int n, int xr = 1);

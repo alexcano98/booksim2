@@ -138,7 +138,6 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
             || (pattern_name == "tornado_alex_ndim")
             || (pattern_name == "complement_reverse_2d")
             || (pattern_name == "complement_reverse_2d_hyperx")
-            || (pattern_name == "complement_reverse_3d_hyperx")
             || (pattern_name == "tornado_alex")
             || (pattern_name == "tornado")
             || (pattern_name == "neighbor")
@@ -195,10 +194,7 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
         result = new TornadoHalfAlexTrafficPattern(nodes, k, n, xr);
       } else if(pattern_name == "complement_reverse_2d_hyperx") {
         assert(k == xr);
-        result = new ComplementReverse2DTrafficPatternHyperx(nodes, k, n, xr);
-      } else if(pattern_name == "complement_reverse_3d_hyperx") {
-        assert(k == xr);
-        result = new ComplementReverse3DTrafficPatternHyperx(nodes, k, n, xr);  
+        result = new ComplementReverse2DTrafficPatternHyperx(nodes, k, n, xr);  
       } else if(pattern_name == "complement_reverse_2d") {
         assert(k == xr *xr);
         result = new ComplementReverse2DTrafficPattern(nodes, k, n, xr);
@@ -520,38 +516,6 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
     return result;
   }
 
-
-  
-    ComplementReverse3DTrafficPatternHyperx::ComplementReverse3DTrafficPatternHyperx(int nodes, int k, int n, int xr)
-  : DigitPermutationTrafficPattern(nodes, k, n, xr)
-  {
-
-  }
-
-  int ComplementReverse3DTrafficPatternHyperx::dest(int source) //aqui podriamos jugar con 4 coordenadas pero no
-  {
-    assert((source >= 0) && (source < _nodes));
-    assert(_n==3);
-
-    int source_router = source / _xr;
-
-    int source_x_router = source_router % _k; //proyeccion
-    int source_y_router = (source_router / _k) % _k; //proyeccion
-    int source_z_router = (source_router / (_k * _k)) % _k; //proyeccion
-
-    //UPDATE; (X,Y,Z) => (-Z, -Y, -X)
-
-
-    int x_neg = (-source_x_router + _k -1) % _k;
-
-    int y_neg = (-source_y_router + _k-1) % _k;
-
-    int z_neg = (-source_z_router + _k-1) % _k;
-
-    int result = (z_neg + y_neg * _k + x_neg *_k*_k ) * _xr + (source % _xr); 
-    
-    return result;
-  }
 
   ShuffleTrafficPattern::ShuffleTrafficPattern(int nodes)
   : BitPermutationTrafficPattern(nodes)
