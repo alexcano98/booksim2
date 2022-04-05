@@ -79,6 +79,7 @@ void Hyperx::RegisterRoutingFunctions() {
 	gRoutingFunctionMap["adaptive_escalera_hyperx"] =&adaptive_escalera_hyperx;
 	gRoutingFunctionMap["ugal_hyperx"] =&ugal_hyperx;
 
+	gRoutingFunctionMap["dim_war_hyperx"] =&dim_war_hyperx;
 }
 
 void Hyperx::_BuildNet( const Configuration &config )
@@ -323,7 +324,7 @@ int calculateDOR_ugal(int inyector_destino, int nodo_actual){
 
 }
 
-int find_distance_hyperx (int src, int dest) {
+int find_distance_hyperx(int src, int dest) {
 	int dist = 0;
 	int _dim   = gN;
 
@@ -489,6 +490,7 @@ void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel,
 			}else{ //FIX THIS for n> 2
 
 				dimension_salida = f->vc / available_vcs;
+				/*for(int i = dimension_salida; i< gN; i++)*/
 
 				if(dimension_salida == 1){
 					//vcBegin += available_vcs;
@@ -939,3 +941,117 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 
 					outputs->AddRange( out_port , vcBegin, vcEnd );
 				}
+
+
+
+		void dim_war_hyperx( const Router *r, const Flit *f, int in_channel,
+			OutputSet *outputs, bool inject )
+			{
+				// ( Traffic Class , Routing Order ) -> Virtual Channel Range
+				int vcBegin = 0, vcEnd = gNumVCs-1;
+				if ( f->type == Flit::READ_REQUEST ) {
+					vcBegin = gReadReqBeginVC;
+					vcEnd = gReadReqEndVC;
+				} else if ( f->type == Flit::WRITE_REQUEST ) {
+					vcBegin = gWriteReqBeginVC;
+					vcEnd = gWriteReqEndVC;
+				} else if ( f->type ==  Flit::READ_REPLY ) {
+					vcBegin = gReadReplyBeginVC;
+					vcEnd = gReadReplyEndVC;
+				} else if ( f->type ==  Flit::WRITE_REPLY ) {
+					vcBegin = gWriteReplyBeginVC;
+					vcEnd = gWriteReplyEndVC;
+				}
+				assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
+
+				int out_port;
+
+				int nodo_destino = calculateRouter(f->dest);
+				int nodo_actual = r->GetID();
+
+
+				if(inject) {
+
+					out_port = -1;
+
+				} else if(nodo_destino == nodo_actual) {
+
+					out_port = gN * (gK -1) + calculateExitPort(f->dest);
+				
+				}else{
+
+					if ( in_channel >= (gK-1)*gN ){ //inyección
+						vcEnd = 0;
+					
+					}else{
+
+						vcBegin = f->vc + 1;
+						vcEnd = f->vc + 1;
+					}
+					//assert(false);
+					int distance_to_dest = find_distance_hyperx(f->dest, nodo_actual * gC); //esto es un apaño... xD
+					int available_vcs = gNumVCs - vcEnd;
+					int missroute = distance_to_dest - available_vcs;
+					
+					vector<int> creditos = r->FreeCredits();
+					int vcCredits_max = -1;
+					int dimension_salida = -1;
+
+					for(int i = 0; i< gN ; i++){
+
+						int salida = (node_vectors[nodo_destino * gN+i] - node_vectors[nodo_actual * gN+i] + gK) %gK;
+
+						if(salida != 0){ //Si hay que recorrer esta salida...
+
+							int puerto = i *(gK-1) + salida - 1;
+							int vcfree = getCreditOutportVC_hyperx(puerto, vcEnd, creditos);
+
+
+							if(vcfree >= vcCredits_max){
+								vcCredits_max = vcfree;
+								dimension_salida = i;
+								out_port = puerto; //esto es lo normalizado.
+							}
+
+						}
+
+					}
+
+					assert(dimension_salida != -1);
+
+
+					if(missroute){
+
+						int vcCredits_max_missroute = -1;
+						int out_port_missroute = -1;
+
+						for(int dim = 0; dim < gN ; dim++){
+							
+							int salida = (node_vectors[nodo_destino * gN+dim] - node_vectors[nodo_actual * gN+dim] + gK) %gK;
+
+							if(salida != 0){ //Si hay que recorrer esta salida...
+
+								for(int i = 1; i < (gK -1); i++){
+									int puerto = dim *(gK-1) + i;
+									int vcfree = getCreditOutportVC_hyperx(puerto, vcEnd, creditos);
+
+									if(vcfree > vcCredits_max_missroute ){ //es 1 hop mas....
+										vcCredits_max_missroute = vcfree;
+										out_port_missroute = puerto; //esto es lo normalizado.
+									}
+								}
+
+							}
+						}
+
+						if(vcCredits_max *(1.5) < vcCredits_max_missroute){ //si realmente renta.... puede ser que se coja 
+							out_port = out_port_missroute;
+							//printf("out: %d %d \n", out_port, vcCredits_max_missroute);	//un puerto minimo, pero da igual
+						}
+					}
+				}
+
+				outputs->Clear( );
+
+				outputs->AddRange( out_port , vcBegin, vcEnd );
+			}

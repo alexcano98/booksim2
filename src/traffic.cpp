@@ -139,6 +139,7 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
             || (pattern_name == "complement_reverse_2d")
             || (pattern_name == "complement_reverse_2d_hyperx")
             || (pattern_name == "tornado_alex")
+            || (pattern_name == "swap2")
             || (pattern_name == "tornado")
             || (pattern_name == "neighbor")
             || (pattern_name == "badperm_yarc") ) {
@@ -192,6 +193,8 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
         result = new TornadoNdimAlexTrafficPattern(nodes, k, n, xr);
       } else if(pattern_name == "tornado_alex_half") {
         result = new TornadoHalfAlexTrafficPattern(nodes, k, n, xr);
+      } else if(pattern_name == "swap2") {
+        result = new Swap2(nodes, k, n, xr);
       } else if(pattern_name == "complement_reverse_2d_hyperx") {
         assert(k == xr);
         result = new ComplementReverse2DTrafficPatternHyperx(nodes, k, n, xr);  
@@ -256,6 +259,7 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
     int const mask = _nodes - 1;
     return ~source & mask;
   }
+
 
   TransposeTrafficPattern::TransposeTrafficPattern(int nodes)
   : BitPermutationTrafficPattern(nodes), _shift(0)
@@ -514,6 +518,40 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
     int result = (w_neg + y_neg * _k ) * _xr + x_neg;
     
     return result;
+  }
+
+  Swap2::Swap2(int nodes, int k, int n, int xr): DigitPermutationTrafficPattern(nodes, k, n, xr)
+  {
+
+  }
+
+  int Swap2::dest(int source)
+  {
+    assert((source >= 0) && (source < _nodes));
+    assert(_k == _xr);
+    //esta bien, pero es un trafico unfair
+    
+    int salto = 0;
+    int source_proy = source / _xr;
+
+    if(source_proy % 2){
+      int x = source_proy % _k;
+      int x_comp = -x -1 +_k;
+      
+      salto = x_comp - x;
+
+    }else{
+
+      int y = (source_proy / _k) % _k;
+      int y_comp = -y -1 +_k;
+      salto = (y_comp - y) * _k; 
+    }
+
+    // x + y *k 
+
+    //printf("source: %d, destino: %d\n", source, (source_proy + salto) *_xr + (source % _xr) );
+
+    return (source_proy + salto) *_xr + (source % _xr);
   }
 
 

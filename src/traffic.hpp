@@ -62,6 +62,7 @@ public:
   virtual int dest(int source);
 };
 
+
 class TransposeTrafficPattern : public BitPermutationTrafficPattern {
 protected:
   int _shift;
@@ -133,6 +134,13 @@ public:
   ComplementReverse2DTrafficPatternHyperx(int nodes, int k, int n, int xr = 1);
   virtual int dest(int source);
 };
+
+class Swap2 : public DigitPermutationTrafficPattern {
+public:
+  Swap2(int nodes, int k, int n, int xr = 1);
+  virtual int dest(int source);
+};
+
 
 class NeighborTrafficPattern : public DigitPermutationTrafficPattern {
 public:
