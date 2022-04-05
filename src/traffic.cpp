@@ -537,10 +537,10 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
     int salto = 0;
     int source_proy = source / _xr;
 
-    if(source_proy % 2){
+    if(source % 2){
+
       int x = source_proy % _k;
       int x_comp = -x -1 +_k;
-      
       salto = x_comp - x;
 
     }else{
@@ -548,6 +548,7 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
       int y = (source_proy / _k) % _k;
       int y_comp = -y -1 +_k;
       salto = (y_comp - y) * _k; 
+    
     }
 
     // x + y *k 

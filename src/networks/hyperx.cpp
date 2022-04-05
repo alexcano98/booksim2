@@ -79,7 +79,7 @@ void Hyperx::RegisterRoutingFunctions() {
 	gRoutingFunctionMap["adaptive_escalera_hyperx"] =&adaptive_escalera_hyperx;
 	gRoutingFunctionMap["ugal_hyperx"] =&ugal_hyperx;
 
-	gRoutingFunctionMap["dim_war_hyperx"] =&dim_war_hyperx;
+	gRoutingFunctionMap["omni_war_hyperx"] =&omni_war_hyperx;
 }
 
 void Hyperx::_BuildNet( const Configuration &config )
@@ -171,12 +171,12 @@ void Hyperx::_BuildNet( const Configuration &config )
 
 		//debug
 
-		printf("ID: %d, dimension: %d: ",_routers[node]->GetID(), dim);
+		/*printf("ID: %d, dimension: %d: ",_routers[node]->GetID(), dim);
 		for(int i = 0; i < _k-1; i++){
 			printf("(adj: %d, output: %d, input: %d)  ",adj_nodes[i], output_node_channel[i], input_node_channel[i]);
 		}
 		printf("\n");
-		fflush(stdout);
+		fflush(stdout);*/
 
 	} //fin dim node
 
@@ -193,14 +193,14 @@ void Hyperx::_BuildNet( const Configuration &config )
 } //fin node
 
 //Empezamos el debug:
-printf("\n ================================================================== \n");
+/*printf("\n ================================================================== \n");
 for ( int node = 0; node < _size; ++node ) {
 
 	printf("ID: %d, inputs: %d, outputs: %d \n",_routers[node]->GetID(), _routers[node]->NumInputs(), _routers[node]->NumOutputs());
 
 }
 printf("\n");
-fflush(stdout);
+fflush(stdout);*/
 
 
 }
@@ -944,7 +944,7 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 
 
 
-		void dim_war_hyperx( const Router *r, const Flit *f, int in_channel,
+		void omni_war_hyperx( const Router *r, const Flit *f, int in_channel,
 			OutputSet *outputs, bool inject )
 			{
 				// ( Traffic Class , Routing Order ) -> Virtual Channel Range
@@ -964,7 +964,7 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 				}
 				assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
 
-				int out_port;
+				int out_port = -1;
 
 				int nodo_destino = calculateRouter(f->dest);
 				int nodo_actual = r->GetID();
@@ -989,11 +989,18 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 						vcEnd = f->vc + 1;
 					}
 					//assert(false);
-					int distance_to_dest = find_distance_hyperx(f->dest, nodo_actual * gC); //esto es un apaño... xD
-					int available_vcs = gNumVCs - vcEnd;
-					int missroute = distance_to_dest - available_vcs;
 					
+					int distance_to_dest = find_distance_hyperx(f->dest, nodo_actual * gC); //esto es un apaño... xD
+					int available_vcs = gNumVCs - vcEnd; //+1 -1 
+					//printf("gNumVCs: %d\n", gNumVCs);
+					//printf("vEnd: %d\n", vcEnd);
+					//printf("avaliable_vcs: %d\n", available_vcs);
+					//printf("distance_to_dest: %d\n", distance_to_dest);
+					int missroute = available_vcs - distance_to_dest;
+					//printf("missroute: %d\n", missroute);
+					assert(missroute > -1);
 					vector<int> creditos = r->FreeCredits();
+
 					int vcCredits_max = -1;
 					int dimension_salida = -1;
 
@@ -1010,7 +1017,7 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 							if(vcfree >= vcCredits_max){
 								vcCredits_max = vcfree;
 								dimension_salida = i;
-								out_port = puerto; //esto es lo normalizado.
+								out_port = puerto;
 							}
 
 						}
@@ -1025,6 +1032,8 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 						int vcCredits_max_missroute = -1;
 						int out_port_missroute = -1;
 
+						int prohibido =  -(in_channel % (gK-1)) + gK - 2 + in_channel - in_channel % (gK-1);
+						//printf("in channel: %d prohibido port: %d\n",in_channel, prohibido);
 						for(int dim = 0; dim < gN ; dim++){
 							
 							int salida = (node_vectors[nodo_destino * gN+dim] - node_vectors[nodo_actual * gN+dim] + gK) %gK;
@@ -1035,20 +1044,21 @@ void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel,
 									int puerto = dim *(gK-1) + i;
 									int vcfree = getCreditOutportVC_hyperx(puerto, vcEnd, creditos);
 
-									if(vcfree > vcCredits_max_missroute ){ //es 1 hop mas....
+									if( puerto != prohibido && vcfree > vcCredits_max_missroute ){ //es 1 hop mas....
 										vcCredits_max_missroute = vcfree;
-										out_port_missroute = puerto; //esto es lo normalizado.
+										out_port_missroute = puerto;
 									}
 								}
 
 							}
 						}
-
-						if(vcCredits_max *(1.5) < vcCredits_max_missroute){ //si realmente renta.... puede ser que se coja 
+						//vcCredits_max *(1.5) < vcCredits_max_missroute
+						if(r->GetUsedCredit(out_port) * distance_to_dest > r->GetUsedCredit(out_port_missroute) * (distance_to_dest+1) ){ //si realmente renta.... puede ser que se coja 
 							out_port = out_port_missroute;
 							//printf("out: %d %d \n", out_port, vcCredits_max_missroute);	//un puerto minimo, pero da igual
 						}
 					}
+					assert(out_port != -1);
 				}
 
 				outputs->Clear( );
