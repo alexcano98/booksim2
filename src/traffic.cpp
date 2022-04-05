@@ -138,6 +138,7 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
             || (pattern_name == "tornado_alex_ndim")
             || (pattern_name == "complement_reverse_2d")
             || (pattern_name == "complement_reverse_2d_hyperx")
+            || (pattern_name == "complement_reverse_3d_hyperx")
             || (pattern_name == "tornado_alex")
             || (pattern_name == "swap2")
             || (pattern_name == "tornado")
@@ -197,7 +198,10 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
         result = new Swap2(nodes, k, n, xr);
       } else if(pattern_name == "complement_reverse_2d_hyperx") {
         assert(k == xr);
-        result = new ComplementReverse2DTrafficPatternHyperx(nodes, k, n, xr);  
+        result = new ComplementReverse2DTrafficPatternHyperx(nodes, k, n, xr);
+      } else if(pattern_name == "complement_reverse_3d_hyperx") {
+        assert(k == xr);
+        result = new ComplementReverse3DTrafficPatternHyperx(nodes, k, n, xr);  
       } else if(pattern_name == "complement_reverse_2d") {
         assert(k == xr *xr);
         result = new ComplementReverse2DTrafficPattern(nodes, k, n, xr);
