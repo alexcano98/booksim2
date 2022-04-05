@@ -519,7 +519,6 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
     
     return result;
   }
-
   Swap2::Swap2(int nodes, int k, int n, int xr): DigitPermutationTrafficPattern(nodes, k, n, xr)
   {
 
@@ -552,6 +551,37 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
     //printf("source: %d, destino: %d\n", source, (source_proy + salto) *_xr + (source % _xr) );
 
     return (source_proy + salto) *_xr + (source % _xr);
+  }
+
+  ComplementReverse3DTrafficPatternHyperx::ComplementReverse3DTrafficPatternHyperx(int nodes, int k, int n, int xr)
+  : DigitPermutationTrafficPattern(nodes, k, n, xr)
+  {
+
+  }
+
+  int ComplementReverse3DTrafficPatternHyperx::dest(int source) //aqui podriamos jugar con 4 coordenadas pero no
+  {
+    assert((source >= 0) && (source < _nodes));
+    assert(_n==3);
+
+    int source_router = source / _xr;
+
+    int source_x_router = source_router % _k; //proyeccion
+    int source_y_router = (source_router / _k) % _k; //proyeccion
+    int source_z_router = (source_router / (_k * _k)) % _k; //proyeccion
+
+    //UPDATE; (X,Y,Z) => (-Z, -Y, -X)
+
+
+    int x_neg = (-source_x_router + _k -1) % _k;
+
+    int y_neg = (-source_y_router + _k-1) % _k;
+
+    int z_neg = (-source_z_router + _k-1) % _k;
+
+    int result = (z_neg + y_neg * _k + x_neg *_k*_k ) * _xr + (source % _xr); 
+
+    return result;
   }
 
 
