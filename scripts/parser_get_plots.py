@@ -175,10 +175,13 @@ def main():
 
         ax.legend(loc='upper left')
 
-        #show only x range between 0 and 1.1
+       
+        plt.ylabel('Latency (cycles)')
+        plt.xlabel('Injected rate (Flits/cycle/node)')
+        plt.title('Flits latency (cycles) [TP={}]'.format(traffic_pattern))
+        #show only x range between 0 and 1
         plt.xlim(0, 1.1)
         plt.grid()
-        #plt.show()
         plt.savefig('./plots/'+topology+'_worst_flits_latency_'+t+'.png')
         print("Flits latency plot created")
 
@@ -199,7 +202,7 @@ def main():
 
         #show only x range between 0 and 1.1
         plt.xlim(0, 1.1)
-
+        plt.ylim(0, 1.1)
         plt.ylabel('Accepted flits')
         plt.xlabel('Injected Rate (Flits/cycle/node)')
         plt.title('Throughput [TP={}]'.format(traffic_pattern))
@@ -226,7 +229,7 @@ def main():
 
         #show only x range between 0 and 1.1
         plt.xlim(0, 1.1)
-
+        plt.ylim(0, 1.1)
 
         plt.ylabel('Accepted flits')
         plt.xlabel('Injected Rate (Flits/cycle/node)')

@@ -31,7 +31,7 @@ print_csv_results = 1;
 routing_function =dor;
 sim_type = latency;
 
-injection_rate = 0.5;
+injection_rate = 1.0;
 traffic = uniform;
 
 credit_delay = 0;

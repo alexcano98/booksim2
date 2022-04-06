@@ -23,7 +23,7 @@ internal_speedup = 1.5;
 print_csv_results = 1;
 
 
-sim_type = latency;
+sim_type = throughput;
 routing_function =dor;
 
 //for injection mode
@@ -38,3 +38,8 @@ sw_alloc_delay = 1;
 st_prepare_delay = 0;
 st_final_delay = 1;
 speculative = 1;
+
+seed=1;
+
+watch_out=fichero.txt;
+watch_packets = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,40,55,89,120,121,122,123};

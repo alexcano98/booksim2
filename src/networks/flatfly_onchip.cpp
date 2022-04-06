@@ -499,11 +499,11 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel, 
     outputs->AddRange( out_port , vcBegin, vcEnd );
   } */
 
-  int getCreditOutportVC(int outport, int vc, vector<int> creditos){
+  int getCreditOutportVC(int outport, int vc, vector<int>& creditos){
     return creditos[outport * gNumVCs + vc ];
   }
 
-  int maxCreditsVC(int outport, int canales, vector<int> creditos){
+  int maxCreditsVC(int outport, int canales, vector<int>& creditos){
 
     int vc = -1;
     int max_creditos = -1;
