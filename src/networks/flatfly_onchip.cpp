@@ -328,6 +328,8 @@ void FlatFlyOnChip::RegisterRoutingFunctions(){
 
 
   gRoutingFunctionMap["dor_flatfly"] = &min_flatfly;
+  gRoutingFunctionMap["dor_yx_flatfly"] = &dor_yx;
+  
   gRoutingFunctionMap["adaptive_xyyx_flatfly"] = &adaptive_xyyx_flatfly;
   gRoutingFunctionMap["xyyx_flatfly"] = &xyyx_flatfly;
   gRoutingFunctionMap["valiant_flatfly"] = &valiant_flatfly;
@@ -357,8 +359,75 @@ int getNumSaltos(int source, int dest){
 
 }
 
+
 //num_vcs == diameter of the network
 void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
+  {
+
+    int vcBegin = 0, vcEnd = gNumVCs-1;
+
+    int out_port;
+
+    if(inject) {
+
+
+      out_port = -1;
+
+    } else { //si no se inyecta
+
+      int dest = flatfly_transformation(f->dest);
+      int targetr = (int)(dest/gC);
+
+      if(targetr==r->GetID()){ //if we are at the final router, yay, output to client
+        out_port = dest % gC;
+
+      } else {
+
+        int const available_vcs = (vcEnd - vcBegin + 1) / 2;
+        //printf("%d", available_vcs);
+        //fflush(stdout);
+
+        assert(available_vcs > 0);
+
+        int out_port_xy =  flatfly_outport(dest, r->GetID());
+        int out_port_yx =  flatfly_outport_yx(dest, r->GetID());
+
+        int credit_xy = r->GetUsedCredit(out_port_xy);
+        int credit_yx = r->GetUsedCredit(out_port_yx);
+
+
+        if(credit_xy > credit_yx) {
+          out_port = out_port_yx;
+        } else {
+          out_port = out_port_xy;
+        }
+
+
+        if(in_channel < gC){ //ESTO SOLO VALE PARA DOS DIMENSIONES....
+          vcEnd = vcBegin + available_vcs -1;
+          vcBegin = vcBegin;
+
+        }else{
+          vcEnd = vcEnd; //pa dejarlo claro
+          vcBegin = vcBegin;
+        }
+
+        
+
+
+        //assert(available_vcs > vcBegin);
+      }
+
+    }
+
+    outputs->Clear( );
+
+    outputs->AddRange( out_port , vcBegin, vcEnd );
+  }
+
+
+//num_vcs == diameter of the network
+/*void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
   {
 
     int vcBegin = 0, vcEnd = gNumVCs-1;
@@ -383,9 +452,9 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel, 
         int saltos_src = getNumSaltos(targetr, (int)(flatfly_transformation(f->src)/gC) );
       //  int saltos_curr = getNumSaltos(targetr, r->GetID());
 
-        /*printf("%d\n", saltos);
-        printf("%d %d\n", targetr, r->GetID());
-        fflush(stdout);*/
+        //printf("%d\n", saltos);
+        //printf("%d %d\n", targetr, r->GetID());
+        //fflush(stdout);
 
         int const available_vcs = (vcEnd - vcBegin + 1) / saltos_src;
         //printf("%d", available_vcs);
@@ -428,7 +497,7 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel, 
     outputs->Clear( );
 
     outputs->AddRange( out_port , vcBegin, vcEnd );
-  }
+  } */
 
   int getCreditOutportVC(int outport, int vc, vector<int> creditos){
     return creditos[outport * gNumVCs + vc ];
@@ -507,12 +576,12 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel, 
           int credits_canal_xy = getCreditOutportVC(out_port_xy, canal_xy, creditos);
           int credits_canal_yx = getCreditOutportVC(out_port_yx, canal_yx, creditos);
 
-          if(credits_canal_xy >= credits_canal_yx && credits_canal_xy < 0) { //primero con orden en xy gNumVCs
+          if(credits_canal_xy >= credits_canal_yx && credits_canal_xy > 0) { //primero con orden en xy gNumVCs
             out_port = out_port_xy;
             vcBegin = canal_xy;
             vcEnd = canal_xy;
 
-          } else if(credits_canal_xy < credits_canal_yx && credits_canal_yx < 0) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
+          } else if(credits_canal_xy < credits_canal_yx && credits_canal_yx > 0) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
             out_port = out_port_yx;
             vcBegin = canal_yx;
             vcEnd = canal_yx;
@@ -815,6 +884,51 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel, 
                   out_port = dest % gC;
                 } else{ //else select a dimension at random
                   out_port = flatfly_outport(dest, r->GetID());
+                }
+
+              }
+
+              outputs->Clear( );
+
+              outputs->AddRange( out_port , vcBegin, vcEnd );
+            }
+
+
+          void dor_yx( const Router *r, const Flit *f, int in_channel,
+            OutputSet *outputs, bool inject )
+            {
+              // ( Traffic Class , Routing Order ) -> Virtual Channel Range
+              int vcBegin = 0, vcEnd = gNumVCs-1;
+              if ( f->type == Flit::READ_REQUEST ) {
+                vcBegin = gReadReqBeginVC;
+                vcEnd = gReadReqEndVC;
+              } else if ( f->type == Flit::WRITE_REQUEST ) {
+                vcBegin = gWriteReqBeginVC;
+                vcEnd = gWriteReqEndVC;
+              } else if ( f->type ==  Flit::READ_REPLY ) {
+                vcBegin = gReadReplyBeginVC;
+                vcEnd = gReadReplyEndVC;
+              } else if ( f->type ==  Flit::WRITE_REPLY ) {
+                vcBegin = gWriteReplyBeginVC;
+                vcEnd = gWriteReplyEndVC;
+              }
+              assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
+
+              int out_port;
+
+              if(inject) {
+
+                out_port = -1;
+
+              } else {
+
+                int dest  = flatfly_transformation(f->dest);
+                int targetr= (int)(dest/gC);
+
+                if(targetr==r->GetID()){ //if we are at the final router, yay, output to client
+                  out_port = dest % gC;
+                } else{ //else select a dimension at random
+                  out_port = flatfly_outport_yx(dest, r->GetID());
                 }
 
               }

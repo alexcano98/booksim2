@@ -28,8 +28,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <sstream>
 #include <ctime>
+#include <cmath>
 #include "random_utils.hpp"
 #include "traffic.hpp"
+#include "misc_utils.hpp"
+#include "globals.hpp"
+
 
 TrafficPattern::TrafficPattern(int nodes)
 : _nodes(nodes)
@@ -131,9 +135,13 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
       result = new BadPermDFlyTrafficPattern(nodes, k, n);
     } else if( (pattern_name == "tornado_alex_half")
             || (pattern_name == "tornado_alex_xy")
-            ||(pattern_name == "complement_reverse_2d")
+            || (pattern_name == "tornado_alex_ndim")
+            || (pattern_name == "complement_reverse_2d")
+            || (pattern_name == "complement_reverse_2d_hyperx")
+            || (pattern_name == "complement_reverse_3d_hyperx")
             || (pattern_name == "tornado_alex")
-            ||(pattern_name == "tornado")
+            || (pattern_name == "swap2")
+            || (pattern_name == "tornado")
             || (pattern_name == "neighbor")
             || (pattern_name == "badperm_yarc") ) {
 
@@ -179,9 +187,21 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
       } else if(pattern_name == "tornado_alex") {
         result = new TornadoAlexTrafficPattern(nodes, k, n, xr);
       } else if(pattern_name == "tornado_alex_xy") {
+        assert(k == xr *xr); //esto es para asegurar que no pillo la hyperx aqui...
         result = new TornadoXYAlexTrafficPattern(nodes, k, n, xr);
+      } else if(pattern_name == "tornado_alex_ndim") {
+        assert(k == xr);
+        result = new TornadoNdimAlexTrafficPattern(nodes, k, n, xr);
       } else if(pattern_name == "tornado_alex_half") {
         result = new TornadoHalfAlexTrafficPattern(nodes, k, n, xr);
+      } else if(pattern_name == "swap2") {
+        result = new Swap2(nodes, k, n, xr);
+      } else if(pattern_name == "complement_reverse_2d_hyperx") {
+        assert(k == xr);
+        result = new ComplementReverse2DTrafficPatternHyperx(nodes, k, n, xr);
+      } else if(pattern_name == "complement_reverse_3d_hyperx") {
+        assert(k == xr);
+        result = new ComplementReverse3DTrafficPatternHyperx(nodes, k, n, xr);  
       } else if(pattern_name == "complement_reverse_2d") {
         assert(k == xr *xr);
         result = new ComplementReverse2DTrafficPattern(nodes, k, n, xr);
@@ -243,6 +263,7 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
     int const mask = _nodes - 1;
     return ~source & mask;
   }
+
 
   TransposeTrafficPattern::TransposeTrafficPattern(int nodes)
   : BitPermutationTrafficPattern(nodes), _shift(0)
@@ -357,6 +378,47 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
     return result;
   }
 
+    TornadoNdimAlexTrafficPattern::TornadoNdimAlexTrafficPattern(int nodes, int k, int n, int xr)
+  : DigitPermutationTrafficPattern(nodes, k, n, xr)
+  {
+
+  }
+
+
+  //Parece que ya va bien
+  int TornadoNdimAlexTrafficPattern::dest(int source)
+  {
+    assert((source >= 0) && (source < _nodes));
+
+    //assert(false);
+    
+    int salto = (( _k - 1) / 2); // * _xr
+    int source_router = source / _xr;
+    int result = source_router;
+
+
+    for(int i = 0; i< _n; i++){
+      int proyeccion_salto  = (result /powi(_k, i) ) % _k;
+      int salto_help = salto;
+
+      if( (proyeccion_salto + salto) >= _k ){ //hacia detras
+
+        salto_help -=  _k; //lo cogemos hacia detras...
+        result += (salto_help * powi(_k, i));
+
+      }else{
+
+        result += (salto_help * powi(_k, i));
+
+      }
+      
+      //result =  result + (salto * powi(_k, i) % powi(_k, i +1)); //Esta mal, hay que ver vcuando da el salto en la dimension
+                                                                  //no con el nodo global
+    }
+    
+    return (result * _xr + source % _xr);
+  }
+
 
 
   TornadoHalfAlexTrafficPattern::TornadoHalfAlexTrafficPattern(int nodes, int k, int n, int xr)
@@ -370,7 +432,7 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
     assert((source >= 0) && (source < _nodes));
 
     int source_x = (source % (_xr * _k)); //proyeccion
-    int salto = (( _k - 1) / 2) * _xr + (source_x % 2); //salto en routers * nodos por router
+    int salto = (( _k - 1) / 2) * _xr + (source_x % 2)* _xr; //salto en routers * nodos por router
     int result = 0;
 
     if( (source_x + salto) >= (_xr * _k)){ //hacia atras
@@ -428,6 +490,102 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
     int y_neg = (-source_y_router + _k-1) % _k;
 
     int result = (_xr * _xr) * y_neg * _k + (_xr) * w_neg + _xr  * _k * x_neg_offset_y + x_neg_offset_x;
+    return result;
+  }
+
+
+    ComplementReverse2DTrafficPatternHyperx::ComplementReverse2DTrafficPatternHyperx(int nodes, int k, int n, int xr)
+  : DigitPermutationTrafficPattern(nodes, k, n, xr)
+  {
+
+  }
+
+  int ComplementReverse2DTrafficPatternHyperx::dest(int source)
+  {
+    assert((source >= 0) && (source < _nodes));
+    assert(_n==2);
+
+    int source_router = source / _xr;
+
+    int source_x_router = source_router % _k; //proyeccion
+    int source_y_router = source_router / _k; //proyeccion
+
+    //UPDATE; (w,x,y) = (-x -1,-w -1,-y -1)
+
+    int w = source % _xr;
+    int w_neg = (-w + _k -1) % _k;
+
+    int x_neg = (-source_x_router + _k -1) % _k;
+
+    int y_neg = (-source_y_router + _k-1) % _k;
+
+    int result = (w_neg + y_neg * _k ) * _xr + x_neg;
+    
+    return result;
+  }
+  Swap2::Swap2(int nodes, int k, int n, int xr): DigitPermutationTrafficPattern(nodes, k, n, xr)
+  {
+
+  }
+
+  int Swap2::dest(int source)
+  {
+    assert((source >= 0) && (source < _nodes));
+    assert(_k == _xr);
+    //esta bien, pero es un trafico unfair
+    
+    int salto = 0;
+    int source_proy = source / _xr;
+
+    if(source % 2){
+
+      int x = source_proy % _k;
+      int x_comp = -x -1 +_k;
+      salto = x_comp - x;
+
+    }else{
+
+      int y = (source_proy / _k) % _k;
+      int y_comp = -y -1 +_k;
+      salto = (y_comp - y) * _k; 
+    
+    }
+
+    // x + y *k 
+
+    //printf("source: %d, destino: %d\n", source, (source_proy + salto) *_xr + (source % _xr) );
+
+    return (source_proy + salto) *_xr + (source % _xr);
+  }
+
+  ComplementReverse3DTrafficPatternHyperx::ComplementReverse3DTrafficPatternHyperx(int nodes, int k, int n, int xr)
+  : DigitPermutationTrafficPattern(nodes, k, n, xr)
+  {
+
+  }
+
+  int ComplementReverse3DTrafficPatternHyperx::dest(int source) //aqui podriamos jugar con 4 coordenadas pero no
+  {
+    assert((source >= 0) && (source < _nodes));
+    assert(_n==3);
+
+    int source_router = source / _xr;
+
+    int source_x_router = source_router % _k; //proyeccion
+    int source_y_router = (source_router / _k) % _k; //proyeccion
+    int source_z_router = (source_router / (_k * _k)) % _k; //proyeccion
+
+    //UPDATE; (X,Y,Z) => (-Z, -Y, -X)
+
+
+    int x_neg = (-source_x_router + _k -1) % _k;
+
+    int y_neg = (-source_y_router + _k-1) % _k;
+
+    int z_neg = (-source_z_router + _k-1) % _k;
+
+    int result = (z_neg + y_neg * _k + x_neg *_k*_k ) * _xr + (source % _xr); 
+
     return result;
   }
 
