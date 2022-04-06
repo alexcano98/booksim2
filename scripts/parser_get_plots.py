@@ -79,12 +79,12 @@ def main():
     print("traffics: ", traffics)
 
 
-    flits_latency_list = {'injected_rate': injected_rate}
-    accepted_flits_list = {'injected_rate': injected_rate}
-    traffic_pattern_list = {'injected_rate': injected_rate}
-    hops_avg_list = {'injected_rate': injected_rate}
-    worst_flits_latency_list = {'injected_rate': injected_rate}
-    worst_accepted_flits_list = {'injected_rate': injected_rate}
+    flits_latency_list = {} #'injected_rate': injected_rate
+    accepted_flits_list = {}
+    traffic_pattern_list = {}
+    hops_avg_list = {}
+    worst_flits_latency_list = {}
+    worst_accepted_flits_list = {}
 
 
     os.chdir(out_dir)
@@ -132,15 +132,25 @@ def main():
 
         #assign a marker per routing
         data = pd.DataFrame(flits_latency_list)
-        data.plot(x='injected_rate', y=routings, legend=True, title='Flits latency')
+        data.plot(y=routings, legend=True, title='Flits latency')
 
         ax = data.plot(kind='line')
         for i, line in enumerate(ax.get_lines()):
+            if line.get_label() == 'injected_rate':
+                print("pasando")
+                continue
             line.set_marker(markers[i])
+            line.set_xdata(injected_rate)
+            #marker also the legend
+
+        ax.legend(loc='upper left')
+        
 
         plt.ylabel('Latency (cycles)')
         plt.xlabel('Injected rate (Flits/cycle/node)')
         plt.title('Flits latency (cycles) [TP={}]'.format(traffic_pattern))
+        #show only x range between 0 and 1
+        plt.xlim(0, 1.1)
         plt.grid()
         plt.savefig('./plots/'+topology+'_flits_latency_'+t+'.png')
         print("Flits latency plot created")
@@ -148,15 +158,25 @@ def main():
         #PLOT 2
 
         data = pd.DataFrame(worst_flits_latency_list)
-        data.plot(x='injected_rate', y=routings, legend=True, title='Worst flits latency')
+        data.plot( y=routings, legend=True, title='Worst flits latency')
         plt.ylabel('Latency (cycles)')
         plt.xlabel('Injected rate (Flits/cycle/node)')
         plt.title('Flits latency (cycles) [TP={}]'.format(traffic_pattern))
         #plt.xticks(np.arange(0, 1.1, 0.1))
+        
         ax = data.plot(kind='line')
         for i, line in enumerate(ax.get_lines()):
+            if line.get_label() == 'injected_rate':
+                print("pasando")
+                continue
             line.set_marker(markers[i])
+            line.set_xdata(injected_rate)
+            #marker also the legend
 
+        ax.legend(loc='upper left')
+
+        #show only x range between 0 and 1.1
+        plt.xlim(0, 1.1)
         plt.grid()
         #plt.show()
         plt.savefig('./plots/'+topology+'_worst_flits_latency_'+t+'.png')
@@ -164,11 +184,21 @@ def main():
 
          #PLOT 3
         data = pd.DataFrame(accepted_flits_list)
-        data.plot(x='injected_rate', y=routings, legend=True, title='Throughput')
+        data.plot(y=routings, legend=True, title='Throughput')
 
         ax = data.plot(kind='line')
         for i, line in enumerate(ax.get_lines()):
+            if line.get_label() == 'injected_rate':
+                print("pasando")
+                continue
             line.set_marker(markers[i])
+            line.set_xdata(injected_rate)
+            #marker also the legend
+
+        ax.legend(loc='upper left')
+
+        #show only x range between 0 and 1.1
+        plt.xlim(0, 1.1)
 
         plt.ylabel('Accepted flits')
         plt.xlabel('Injected Rate (Flits/cycle/node)')
@@ -181,11 +211,21 @@ def main():
 
          #PLOT 4
         data = pd.DataFrame(worst_accepted_flits_list)
-        data.plot(x='injected_rate', y=routings, legend=True, title='Worst throughput')
-
+        data.plot(y=routings, legend=True, title='Worst throughput')
+        
         ax = data.plot(kind='line')
         for i, line in enumerate(ax.get_lines()):
+            if line.get_label() == 'injected_rate':
+                print("pasando")
+                continue
             line.set_marker(markers[i])
+            line.set_xdata(injected_rate)
+            #marker also the legend
+
+        ax.legend(loc='upper left')
+
+        #show only x range between 0 and 1.1
+        plt.xlim(0, 1.1)
 
 
         plt.ylabel('Accepted flits')
@@ -199,12 +239,21 @@ def main():
 
         #PLOT 5
         data = pd.DataFrame(hops_avg_list)
-        data.plot(x='injected_rate', y=routings, legend=True, title='Hops average')
+        data.plot(y=routings, legend=True, title='Hops average')
 
         ax = data.plot(kind='line')
         for i, line in enumerate(ax.get_lines()):
+            if line.get_label() == 'injected_rate':
+                print("pasando")
+                continue
             line.set_marker(markers[i])
+            line.set_xdata(injected_rate)
+            #marker also the legend
 
+        ax.legend(loc='upper left')
+
+        #show only x range between 0 and 1.1
+        plt.xlim(0, 1.1)
         plt.ylabel('Avg hops')
         plt.xlabel('Injected Rate (Flits/cycle/node)')
         plt.title('Hops [TP={}]'.format(traffic_pattern))
