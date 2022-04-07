@@ -601,6 +601,94 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel, 
       outputs->AddRange( out_port , vcBegin, vcEnd );
     }
 
+
+
+  void adaptive_dor_2_flatfly( const Router *r, const Flit *f, int in_channel,
+    OutputSet *outputs, bool inject )
+    {
+
+      int vcBegin = 0, vcEnd = gNumVCs-1;
+
+      if ( f->type == Flit::READ_REQUEST ) {
+        vcBegin = gReadReqBeginVC;
+        vcEnd = gReadReqEndVC;
+      } else if ( f->type == Flit::WRITE_REQUEST ) {
+        vcBegin = gWriteReqBeginVC;
+        vcEnd = gWriteReqEndVC;
+      } else if ( f->type ==  Flit::READ_REPLY ) {
+        vcBegin = gReadReplyBeginVC;
+        vcEnd = gReadReplyEndVC;
+      } else if ( f->type ==  Flit::WRITE_REPLY ) {
+        vcBegin = gWriteReplyBeginVC;
+        vcEnd = gWriteReplyEndVC;
+      }
+      assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
+
+
+      int out_port;
+
+      if(inject) {
+
+
+        out_port = -1;
+
+      } else { //si no se inyecta
+
+        int dest = flatfly_transformation(f->dest);
+        int targetr = (int)(dest/gC);
+
+        if(targetr==r->GetID()){ //if we are at the final router, yay, output to client
+          out_port = dest % gC;
+
+        }else{
+        
+        } 
+        
+        if(f->vc == vcEnd){ //Si entramos por vc DOR
+
+          out_port =  flatfly_outport(dest, r->GetID());
+          vcBegin = vcEnd;
+
+        }else{ //Por cualquier sitio
+
+          vcEnd--; //ultimo canal reservado
+
+          int out_port_xy =  flatfly_outport(dest, r->GetID());
+          int out_port_yx =  flatfly_outport_yx(dest, r->GetID());
+
+          vector<int> creditos = r->FreeCredits();
+
+          int canal_xy = maxCreditsVC(out_port_xy, gNumVCs -1, creditos);
+          int canal_yx = maxCreditsVC(out_port_yx, gNumVCs -1, creditos);
+
+          int credits_canal_xy = getCreditOutportVC(out_port_xy, canal_xy, creditos);
+          int credits_canal_yx = getCreditOutportVC(out_port_yx, canal_yx, creditos);
+
+          if(credits_canal_xy >= credits_canal_yx && credits_canal_xy > 0) { //primero con orden en xy gNumVCs
+            out_port = out_port_xy;
+            vcBegin = canal_xy;
+            vcEnd = canal_xy;
+
+          } else if(credits_canal_xy < credits_canal_yx && credits_canal_yx > 0) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
+            out_port = out_port_yx;
+            vcBegin = canal_yx;
+            vcEnd = canal_yx;
+
+          } else { //canal de escape DOR. -> xy
+            out_port = out_port_xy;
+            vcEnd += 1;
+            vcBegin = vcEnd;
+          }
+
+        }
+
+      }
+
+      outputs->Clear( );
+
+      outputs->AddRange( out_port , vcBegin, vcEnd );
+    }
+
     //The initial XY or YX minimal routing direction is chosen adaptively
     //ESTO NO ES LO MISMO QUE LOS CANALES VIRTUALES EN ESCALERA.
     void adaptive_xyyx_flatfly( const Router *r, const Flit *f, int in_channel,
