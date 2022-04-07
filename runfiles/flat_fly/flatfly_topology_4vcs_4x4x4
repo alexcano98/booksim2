@@ -34,4 +34,4 @@ routing_function =dor;
 sim_type = latency;
 
 injection_rate = 0.5;
-traffic = uniform;
+traffic = throughput;
