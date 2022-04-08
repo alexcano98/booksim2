@@ -341,6 +341,8 @@ void FlatFlyOnChip::RegisterRoutingFunctions(){
   //funciones implementadas por mi
   gRoutingFunctionMap["adaptive_escalera_flatfly"] = &adaptive_escalera_flatfly;
   gRoutingFunctionMap["adaptive_dor_exit_flatfly"] = &adaptative_dor_exit_flatfly;
+  gRoutingFunctionMap["adaptive_dor_escape_prioridad_flatfly"] = &adaptive_dor_2_flatfly;
+  
 }
 
 
@@ -641,52 +643,44 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel, 
           out_port = dest % gC;
 
         }else{
-        
-        } 
-        
-        if(f->vc == vcEnd){ //Si entramos por vc DOR
+          out_port = flatfly_outport(dest, r->GetID());
+          outputs->AddRange( out_port, 0, vcBegin, vcBegin );
 
-          out_port =  flatfly_outport(dest, r->GetID());
-          vcBegin = vcEnd;
+          if(f->vc != vcEnd){ //adaptativo
 
-        }else{ //Por cualquier sitio
+            vcEnd--; //ultimo canal reservado
 
-          vcEnd--; //ultimo canal reservado
+            int out_port_xy =  flatfly_outport(dest, r->GetID());
+            int out_port_yx =  flatfly_outport_yx(dest, r->GetID());
 
-          int out_port_xy =  flatfly_outport(dest, r->GetID());
-          int out_port_yx =  flatfly_outport_yx(dest, r->GetID());
+            vector<int> creditos = r->FreeCredits();
 
-          vector<int> creditos = r->FreeCredits();
+            int canal_xy = maxCreditsVC(out_port_xy, gNumVCs -1, creditos);
+            int canal_yx = maxCreditsVC(out_port_yx, gNumVCs -1, creditos);
 
-          int canal_xy = maxCreditsVC(out_port_xy, gNumVCs -1, creditos);
-          int canal_yx = maxCreditsVC(out_port_yx, gNumVCs -1, creditos);
+            int credits_canal_xy = getCreditOutportVC(out_port_xy, canal_xy, creditos);
+            int credits_canal_yx = getCreditOutportVC(out_port_yx, canal_yx, creditos);
 
-          int credits_canal_xy = getCreditOutportVC(out_port_xy, canal_xy, creditos);
-          int credits_canal_yx = getCreditOutportVC(out_port_yx, canal_yx, creditos);
+            if(credits_canal_xy >= credits_canal_yx && credits_canal_xy > 0) { //primero con orden en xy gNumVCs
+              out_port = out_port_xy;
+              vcBegin = canal_xy;
+              vcEnd = canal_xy;
 
-          if(credits_canal_xy >= credits_canal_yx && credits_canal_xy > 0) { //primero con orden en xy gNumVCs
-            out_port = out_port_xy;
-            vcBegin = canal_xy;
-            vcEnd = canal_xy;
+            } else if(credits_canal_xy < credits_canal_yx && credits_canal_yx > 0) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
+              out_port = out_port_yx;
+              vcBegin = canal_yx;
+              vcEnd = canal_yx;
 
-          } else if(credits_canal_xy < credits_canal_yx && credits_canal_yx > 0) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
-            out_port = out_port_yx;
-            vcBegin = canal_yx;
-            vcEnd = canal_yx;
+            }
 
-          } else { //canal de escape DOR. -> xy
-            out_port = out_port_xy;
-            vcEnd += 1;
-            vcBegin = vcEnd;
-          }
-
+            outputs->AddRange( out_port , vcBegin, vcEnd -1, 1);
         }
 
+      } 
+        
       }
 
-      outputs->Clear( );
-
-      outputs->AddRange( out_port , vcBegin, vcEnd );
+     // outputs->Clear( );
     }
 
     //The initial XY or YX minimal routing direction is chosen adaptively
