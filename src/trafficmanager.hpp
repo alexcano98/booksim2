@@ -182,6 +182,7 @@ protected:
   vector<double> _overall_min_accepted;
   vector<double> _overall_avg_accepted;
   vector<double> _overall_max_accepted;
+  vector<double> _overall_vc_utilization;
 
 #ifdef TRACK_STALLS
   vector<vector<int> > _buffer_busy_stalls;
@@ -251,6 +252,7 @@ protected:
   ostream * _outstanding_credits_out;
   ostream * _ejected_flits_out;
   ostream * _active_packets_out;
+  ostream * _overall_vc_utilization_out;
 #endif
 
 #ifdef TRACK_CREDITS

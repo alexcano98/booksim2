@@ -330,7 +330,7 @@ void FlatFlyOnChip::RegisterRoutingFunctions(){
   gRoutingFunctionMap["dor_flatfly"] = &min_flatfly;
   gRoutingFunctionMap["dor_yx_flatfly"] = &dor_yx;
   
-  gRoutingFunctionMap["adaptive_xyyx_flatfly"] = &adaptive_xyyx_flatfly;
+  gRoutingFunctionMap["O1_turn_flatfly"] = &adaptive_xyyx_flatfly;
   gRoutingFunctionMap["xyyx_flatfly"] = &xyyx_flatfly;
   gRoutingFunctionMap["valiant_flatfly"] = &valiant_flatfly;
 
@@ -340,8 +340,8 @@ void FlatFlyOnChip::RegisterRoutingFunctions(){
 
   //funciones implementadas por mi
   gRoutingFunctionMap["adaptive_escalera_flatfly"] = &adaptive_escalera_flatfly;
-  gRoutingFunctionMap["adaptive_dor_exit_flatfly"] = &adaptative_dor_exit_flatfly;
-  gRoutingFunctionMap["adaptive_dor_escape_prioridad_flatfly"] = &adaptive_dor_2_flatfly;
+  //gRoutingFunctionMap["adaptive_dor_exit_flatfly"] = &adaptative_dor_exit_flatfly;
+  gRoutingFunctionMap["adaptive_escape_flatfly"] = &adaptive_escape;
   
 }
 
@@ -605,7 +605,7 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel, 
 
 
 
-  void adaptive_dor_2_flatfly( const Router *r, const Flit *f, int in_channel,
+  void adaptive_escape( const Router *r, const Flit *f, int in_channel,
     OutputSet *outputs, bool inject )
     {
 
@@ -625,14 +625,17 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel, 
         vcEnd = gWriteReplyEndVC;
       }
       assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
+      assert(gNumVCs >= 2);
+
+      outputs->Clear( );
 
 
       int out_port;
 
       if(inject) {
 
-
         out_port = -1;
+        outputs->AddRange( out_port , vcBegin, vcEnd);
 
       } else { //si no se inyecta
 
@@ -641,46 +644,25 @@ void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel, 
 
         if(targetr==r->GetID()){ //if we are at the final router, yay, output to client
           out_port = dest % gC;
+          outputs->AddRange( out_port , vcBegin, vcEnd);
 
         }else{
           out_port = flatfly_outport(dest, r->GetID());
-          outputs->AddRange( out_port, 0, vcBegin, vcBegin );
+          outputs->AddRange( out_port, vcBegin, vcBegin, 0 );
 
           if(f->vc != vcEnd){ //adaptativo
-
-            vcEnd--; //ultimo canal reservado
 
             int out_port_xy =  flatfly_outport(dest, r->GetID());
             int out_port_yx =  flatfly_outport_yx(dest, r->GetID());
 
-            vector<int> creditos = r->FreeCredits();
-
-            int canal_xy = maxCreditsVC(out_port_xy, gNumVCs -1, creditos);
-            int canal_yx = maxCreditsVC(out_port_yx, gNumVCs -1, creditos);
-
-            int credits_canal_xy = getCreditOutportVC(out_port_xy, canal_xy, creditos);
-            int credits_canal_yx = getCreditOutportVC(out_port_yx, canal_yx, creditos);
-
-            if(credits_canal_xy >= credits_canal_yx && credits_canal_xy > 0) { //primero con orden en xy gNumVCs
-              out_port = out_port_xy;
-              vcBegin = canal_xy;
-              vcEnd = canal_xy;
-
-            } else if(credits_canal_xy < credits_canal_yx && credits_canal_yx > 0) { //despues con orden en yx (en el segundo salto apuntaran al mismo switch)
-              out_port = out_port_yx;
-              vcBegin = canal_yx;
-              vcEnd = canal_yx;
-
-            }
-
-            outputs->AddRange( out_port , vcBegin, vcEnd -1, 1);
-        }
-
-      } 
+            //out_port = (r->GetUsedCredit(out_port_xy) < r->GetUsedCredit(out_port_yx)) ? out_port_xy : out_port_yx;
+            outputs->AddRange( out_port_xy , vcBegin+1, vcEnd, 1);
+            outputs->AddRange( out_port_yx , vcBegin+1, vcEnd, 1);
+          }
+        } 
         
       }
 
-     // outputs->Clear( );
     }
 
     //The initial XY or YX minimal routing direction is chosen adaptively

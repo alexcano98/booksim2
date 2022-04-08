@@ -408,6 +408,14 @@ TrafficManager * TrafficManager::New(Configuration const & config,
       } else {
         _sent_flits_out = new ofstream(sent_flits_out_file.c_str());
       }
+
+      string overall_vc_utilization_out_file = config.GetStr( "overall_vc_utilization_out" );
+      if(overall_vc_utilization_out_file == "") {
+        _overall_vc_utilization_out = NULL;
+      } else {
+        _overall_vc_utilization_out = new ofstream(overall_vc_utilization_out_file.c_str());
+      }
+
       string outstanding_credits_out_file = config.GetStr( "outstanding_credits_out" );
       if(outstanding_credits_out_file == "") {
         _outstanding_credits_out = NULL;
@@ -421,6 +429,7 @@ TrafficManager * TrafficManager::New(Configuration const & config,
         _ejected_flits_out = new ofstream(ejected_flits_out_file.c_str());
       }
       string active_packets_out_file = config.GetStr( "active_packets_out" );
+      //printf("active_packets_out_file = %s\n", active_packets_out_file.c_str());
       if(active_packets_out_file == "") {
         _active_packets_out = NULL;
       } else {
@@ -490,6 +499,7 @@ TrafficManager * TrafficManager::New(Configuration const & config,
       _overall_max_accepted_packets.resize(_classes, 0.0);
 
       _sent_flits.resize(_classes);
+      _overall_vc_utilization.resize(_vcs);
       _overall_min_sent.resize(_classes, 0.0);
       _overall_avg_sent.resize(_classes, 0.0);
       _overall_max_sent.resize(_classes, 0.0);
@@ -626,6 +636,7 @@ TrafficManager * TrafficManager::New(Configuration const & config,
       if(_outstanding_credits_out) delete _outstanding_credits_out;
       if(_ejected_flits_out) delete _ejected_flits_out;
       if(_active_packets_out) delete _active_packets_out;
+      if(_overall_vc_utilization_out) delete _overall_vc_utilization_out;
       #endif
 
       #ifdef TRACK_CREDITS
@@ -1725,6 +1736,19 @@ TrafficManager * TrafficManager::New(Configuration const & config,
             double rate_avg;
             double time_delta = (double)(_drain_time - _reset_time);
             _ComputeStats( _sent_flits[c], &count_sum, &count_min, &count_max );
+            
+            printf("====================================== \n");
+            //print de la media de los outports para cl = 0
+            for( int i = 0; i < _sent_flits[0].size(); i++){
+              printf("Nodo %d sent flits %d\n", i, _sent_flits[0][i]);
+            }
+            
+            printf("====================================== \n");
+            for(int i = 0; i < _overall_vc_utilization.size(); i++){
+              printf("vc %d utilization %lf \n", i,  _overall_vc_utilization[i]);
+            }//_overall_vc_utilization
+
+
             rate_min = (double)count_min / time_delta;
             rate_sum = (double)count_sum / time_delta;
             rate_max = (double)count_max / time_delta;
@@ -1922,6 +1946,12 @@ TrafficManager * TrafficManager::New(Configuration const & config,
                 if(_sent_flits_out) *_sent_flits_out << r->GetSentFlits(c) << trail_char;
                 if(_outstanding_credits_out) *_outstanding_credits_out << r->GetOutstandingCredits(c) << trail_char;
                 if(_active_packets_out) *_active_packets_out << r->GetActivePackets(c) << trail_char;
+                //if(_overall_vc_utilization_out) *_overall_vc_utilization_out << r->GetOverallVcUtilization(c) << trail_char;
+                
+                for(int vcs_i = 0; vcs_i < _overall_vc_utilization.size();vcs_i++){
+                  _overall_vc_utilization[vcs_i] =  _overall_vc_utilization[vcs_i] +r->GetOverallVcUtilization(c)[vcs_i];
+                }
+                
                 r->ResetFlowStats(c);
                 #endif
                 #ifdef TRACK_STALLS
@@ -1933,6 +1963,10 @@ TrafficManager * TrafficManager::New(Configuration const & config,
                 r->ResetStallStats(c);
                 #endif
               }
+
+              for(int vcs_i = 0; vcs_i < _overall_vc_utilization.size(); vcs_i++){
+                  _overall_vc_utilization[vcs_i]= _overall_vc_utilization[vcs_i] / _routers;
+                }
             }
           }
           #ifdef TRACK_FLOWS
@@ -1943,6 +1977,7 @@ TrafficManager * TrafficManager::New(Configuration const & config,
           if(_outstanding_credits_out) *_outstanding_credits_out << flush;
           if(_ejected_flits_out) *_ejected_flits_out << flush;
           if(_active_packets_out) *_active_packets_out << flush;
+          if(_overall_vc_utilization_out) *_overall_vc_utilization_out << flush;
           #endif
           #endif
 

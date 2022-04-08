@@ -82,6 +82,7 @@ IQRouter::IQRouter( Configuration const & config, Module *parent,
 
 		// Alloc VC's
 		_buf.resize(_inputs);
+		_overall_vc_utilization.resize(_vcs);
 		for ( int i = 0; i < _inputs; ++i ) {
 			ostringstream module_name;
 			module_name << "buf_" << i;
@@ -754,6 +755,7 @@ IQRouter::IQRouter( Configuration const & config, Module *parent,
 						<< " at input " << input
 						<< "." << endl;
 					}
+					_overall_vc_utilization[vc]++;
 
 					iter->second.second = output_and_vc;
 
@@ -890,6 +892,9 @@ IQRouter::IQRouter( Configuration const & config, Module *parent,
 						<< " at output " << match_output
 						<< "." << endl;
 					}
+
+					//printf("virtual channel allocation: %d %d %d\n", input, vc, match_output);
+					//_overall_vc_utilization[vc] ++; 
 
 					BufferState * const dest_buf = _next_buf[match_output];
 					assert(dest_buf->IsAvailableFor(match_vc));
@@ -2201,6 +2206,7 @@ IQRouter::IQRouter( Configuration const & config, Module *parent,
 																		<< " at output " << output
 																		<< "." << endl;
 																	}
+
 																	_output_buffer[output].push(f);
 																	//the output buffer size isn't precise due to flits in flight
 																	//but there is a maximum bound based on output speed up and ST traversal

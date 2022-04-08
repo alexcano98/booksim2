@@ -87,7 +87,7 @@ void adaptative_dor_exit_flatfly( const Router *r, const Flit *f, int in_channel
 void adaptive_escalera_flatfly( const Router *r, const Flit *f, int in_channel,
         OutputSet *outputs, bool inject );
   
-  void adaptive_dor_2_flatfly( const Router *r, const Flit *f, int in_channel,
+  void adaptive_escape( const Router *r, const Flit *f, int in_channel,
     OutputSet *outputs, bool inject );
 
 

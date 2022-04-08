@@ -294,6 +294,8 @@ BookSimConfig::BookSimConfig( )
   AddStrField("outstanding_credits_out", "");
   AddStrField("ejected_flits_out", "");
   AddStrField("active_packets_out", "");
+  
+  AddStrField("overall_vc_utilization_out", "");
 #endif
 
 #ifdef TRACK_CREDITS

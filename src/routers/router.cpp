@@ -75,6 +75,7 @@ TimedModule( parent, name ), _id( id ), _inputs( inputs ), _outputs( outputs ),
   _sent_flits.resize(_classes, vector<int>(_outputs, 0));
   _active_packets.resize(_classes);
   _outstanding_credits.resize(_classes, vector<int>(_outputs, 0));
+  //_overall_vc_utilization.resize(_classes);
 #endif
 
 #ifdef TRACK_STALLS

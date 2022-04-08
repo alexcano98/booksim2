@@ -990,36 +990,36 @@ void min_adapt_mesh( const Router *r, const Flit *f, int in_channel, OutputSet *
 
     for ( int n = 0; n < gN; ++n ) {
       if ( ( cur % gK ) != ( dest % gK ) ) {
-	// Add minimal direction in dimension 'n'
-	if ( ( cur % gK ) < ( dest % gK ) ) { // Right
-	  if ( f->watch ) {
-	    *gWatchOut << GetSimTime() << " | " << r->FullName() << " | "
-			<< "Adding VC range ["
-		       << (vcBegin+1) << ","
-			<< vcEnd << "]"
-			<< " at output port " << 2*n
-			<< " with priority " << 1
-			<< " for flit " << f->id
-			<< " (input port " << in_channel
-			<< ", destination " << f->dest << ")"
-			<< "." << endl;
-	  }
-	  outputs->AddRange( 2*n, vcBegin+1, vcEnd, 1 );
-	} else { // Left
-	  if ( f->watch ) {
-	    *gWatchOut << GetSimTime() << " | " << r->FullName() << " | "
-			<< "Adding VC range ["
-		       << (vcBegin+1) << ","
-			<< vcEnd << "]"
-			<< " at output port " << 2*n+1
-			<< " with priority " << 1
-			<< " for flit " << f->id
-			<< " (input port " << in_channel
-			<< ", destination " << f->dest << ")"
-			<< "." << endl;
-	  }
-	  outputs->AddRange( 2*n + 1, vcBegin+1, vcEnd, 1 );
-	}
+        // Add minimal direction in dimension 'n'
+        if ( ( cur % gK ) < ( dest % gK ) ) { // Right
+          if ( f->watch ) {
+            *gWatchOut << GetSimTime() << " | " << r->FullName() << " | "
+            << "Adding VC range ["
+                << (vcBegin+1) << ","
+            << vcEnd << "]"
+            << " at output port " << 2*n
+            << " with priority " << 1
+            << " for flit " << f->id
+            << " (input port " << in_channel
+            << ", destination " << f->dest << ")"
+            << "." << endl;
+          }
+          outputs->AddRange( 2*n, vcBegin+1, vcEnd, 1 );
+        } else { // Left
+          if ( f->watch ) {
+            *gWatchOut << GetSimTime() << " | " << r->FullName() << " | "
+            << "Adding VC range ["
+                << (vcBegin+1) << ","
+            << vcEnd << "]"
+            << " at output port " << 2*n+1
+            << " with priority " << 1
+            << " for flit " << f->id
+            << " (input port " << in_channel
+            << ", destination " << f->dest << ")"
+            << "." << endl;
+          }
+          outputs->AddRange( 2*n + 1, vcBegin+1, vcEnd, 1 );
+        }
       }
       cur  /= gK;
       dest /= gK;
