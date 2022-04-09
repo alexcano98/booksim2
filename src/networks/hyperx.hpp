@@ -74,6 +74,7 @@ void valiant_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *
 void ugal_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void omni_war_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
+void adaptive_escape_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 
 
 #endif
