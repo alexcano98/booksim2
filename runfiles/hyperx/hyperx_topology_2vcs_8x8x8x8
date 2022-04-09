@@ -17,8 +17,8 @@ warmup_periods = 200;
 max_samples = 204;
 
 
-input_speedup = 4;
-output_speedup = 4;
+input_speedup = 20;
+output_speedup = 20;
 internal_speedup = 1.5;
 print_csv_results = 1;
 

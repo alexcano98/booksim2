@@ -81,7 +81,7 @@ void Hyperx::RegisterRoutingFunctions() {
 	gRoutingFunctionMap["ugal_hyperx"] =&ugal_hyperx;
 	
 
-	gRoutingFunctionMap["omni_war_hyperx"] =&omni_war_hyperx;
+	gRoutingFunctionMap["omni_war_hyperx"] =&omni_war_priority_hyperx;
 }
 
 void Hyperx::_BuildNet( const Configuration &config )
@@ -1066,6 +1066,90 @@ OutputSet *outputs, bool inject )
 	outputs->Clear( );
 
 	outputs->AddRange( out_port , vcBegin, vcEnd );
+}
+
+
+void omni_war_priority_hyperx( const Router *r, const Flit *f, int in_channel,
+OutputSet *outputs, bool inject )
+{
+	// ( Traffic Class , Routing Order ) -> Virtual Channel Range
+	int vcBegin = 0, vcEnd = gNumVCs-1;
+	if ( f->type == Flit::READ_REQUEST ) {
+		vcBegin = gReadReqBeginVC;
+		vcEnd = gReadReqEndVC;
+	} else if ( f->type == Flit::WRITE_REQUEST ) {
+		vcBegin = gWriteReqBeginVC;
+		vcEnd = gWriteReqEndVC;
+	} else if ( f->type ==  Flit::READ_REPLY ) {
+		vcBegin = gReadReplyBeginVC;
+		vcEnd = gReadReplyEndVC;
+	} else if ( f->type ==  Flit::WRITE_REPLY ) {
+		vcBegin = gWriteReplyBeginVC;
+		vcEnd = gWriteReplyEndVC;
+	}
+	assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
+
+	outputs->Clear( );
+	int out_port = -1;
+
+	int nodo_destino = calculateRouter(f->dest);
+	int nodo_actual = r->GetID();
+
+
+	if(inject) {
+
+		out_port = -1;
+
+		outputs->AddRange( out_port , vcBegin, vcEnd );
+	
+	} else if(nodo_destino == nodo_actual) {
+
+		out_port = gN * (gK -1) + calculateExitPort(f->dest);
+		outputs->AddRange( out_port , vcBegin, vcEnd );
+	
+	}else{
+
+		if ( in_channel >= (gK-1)*gN ){ //inyección
+			vcBegin = 0;
+			vcEnd = 0;
+		
+		}else{
+
+			vcBegin = f->vc + 1;
+			vcEnd = f->vc + 1;
+		}
+		//assert(false);
+		
+		int distance_to_dest = find_distance_hyperx(f->dest, nodo_actual * gC); //esto es un apaño... xD
+		int available_vcs = gNumVCs - vcEnd; //+1 -1 
+
+		int missroute = available_vcs - distance_to_dest;
+		
+		assert(missroute > -1);
+
+		int prohibido =  -(in_channel % (gK-1)) + gK - 2 + in_channel - in_channel % (gK-1);
+
+		for(int i = 0; i< gN ; i++){
+
+			int salida = (node_vectors[nodo_destino * gN+i] - node_vectors[nodo_actual * gN+i] + gK) %gK;
+
+			if(salida != 0){ //Si hay que recorrer esta salida...
+
+				int puerto = i *(gK-1) + salida - 1;
+				outputs->AddRange( puerto , vcBegin, vcEnd, 0 );
+
+				if(missroute){
+					
+					for(int k_puerto = 1; k_puerto < (gK -1); i++){
+						int puerto_miss = k_puerto *(gK-1) + i;
+						if( puerto_miss != prohibido && puerto_miss != puerto ){ //es 1 hop mas....
+							outputs->AddRange( puerto_miss , vcBegin, vcEnd, 1 );
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 
