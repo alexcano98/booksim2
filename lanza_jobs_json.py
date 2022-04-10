@@ -117,9 +117,9 @@ for traffic in data["traffic"]:
                 file = open(file_name, "w")
                 file.write(sbatch_string)
                 file.write("\n")
-                file.write("#SBATCH --output=" + topology_dir + "/" + traffic + "  /" + str(num_vcs) + "_" + str(injection_rate) + "_" + routing_function +  ".output")
+                file.write("#SBATCH --output=" + topology_dir + "/" + traffic + "/" + str(num_vcs) + "_" + str(injection_rate) + "_" + routing_function +  ".out")
                 file.write("\n")
-                file.write("#SBATCH --error=" + topology_dir + "/" + traffic + "  /" + str(num_vcs) + "_" + str(injection_rate) + "_" + routing_function + ".error")
+                file.write("#SBATCH --error=" + topology_dir + "/" + traffic + "/" + str(num_vcs) + "_" + str(injection_rate) + "_" + routing_function + ".err")
                 file.write("\n")
                 file.write("./src/booksim " + config_file + " traffic=" + traffic + " num_vcs=" + str(num_vcs) + " injection_rate=" + str(injection_rate) + " routing_function=" + routing_function)
                 file.close()
@@ -128,8 +128,3 @@ for traffic in data["traffic"]:
                 #move the file to sbatch_archive dir
                 shutil.move(file_name, "sbatch_archive")
                 print("Launched job for traffic: " + traffic + " topology: " + topology + " num_vcs: " + str(num_vcs) + " injection_rate: " + str(injection_rate) + " routing_function: " + routing_function)
-
-
-
-               
-
