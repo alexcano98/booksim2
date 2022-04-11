@@ -1,0 +1,10 @@
+{
+    "topology" : "hyperx_8x8x8x8",
+    "injection_rate" : [0.1, 0.9],
+    "traffic": ["complement_reverse_3d_hyperx", "swap2"],
+    "routing_function" :["omni_war"],
+    "results_dir" : "prueba/omniwar",
+    "config_file" : "runfiles/hyperx/hyperx_topology_2vcs_8x8x8x8",
+    "num_vcs" : [3,6,9]
+    
+}

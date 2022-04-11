@@ -5,3 +5,5 @@
 .DS_Store
 results/
 fichero.txt
+sbatch_archive/*
+prueba/*

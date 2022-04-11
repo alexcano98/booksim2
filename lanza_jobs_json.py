@@ -33,11 +33,16 @@ config_file = data["config_file"]
 topology = data["topology"]
 results_dir = data["results_dir"]
 
+#check that theres a second argument and that is equal to 1 to remove the whole results directory
+if len(sys.argv) == 3 and sys.argv[2] == "1":
+    print("Removing previous results")
+    shutil.rmtree(results_dir)
+
 sbatch_string = "#!/bin/bash\n\
 #SBATCH --job-name=booksim\n\
 #SBATCH --cpus-per-task=1\n\
 #SBATCH --ntasks=1\n\
-#SBATCH --time=UNLIMITED;"
+#SBATCH --time=UNLIMITED"
 
 #check that the config file exists
 if not os.path.isfile(config_file):
@@ -124,7 +129,7 @@ for traffic in data["traffic"]:
                 file.write("./src/booksim " + config_file + " traffic=" + traffic + " num_vcs=" + str(num_vcs) + " injection_rate=" + str(injection_rate) + " routing_function=" + routing_function)
                 file.close()
                 #launch the job
-                #subprocess.call(["sbatch", file_name])
-                #move the file to sbatch_archive dir
-                shutil.move(file_name, "sbatch_archive")
+                subprocess.call(["sbatch", file_name])
+                #move the file to sbatch_archive dir and override it if it exists
+                shutil.move(file_name, "sbatch_archive/" + file_name)
                 print("Launched job for traffic: " + traffic + " topology: " + topology + " num_vcs: " + str(num_vcs) + " injection_rate: " + str(injection_rate) + " routing_function: " + routing_function)

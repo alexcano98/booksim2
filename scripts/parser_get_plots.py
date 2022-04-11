@@ -128,7 +128,7 @@ def main():
             worst_accepted_flits_list[routing] = worst_accepted_flits
 
         #markers matploblib
-        markers = ['o', '*','^', 's', 'h', 'H', 'D', 'd', 'P', 'X']
+        markers = ['v', '^', '*', '<', '>',  '*', 'p', '*', '*', '*', '*', '*']
 
         #assign a marker per routing
         data = pd.DataFrame(flits_latency_list)
@@ -203,11 +203,13 @@ def main():
         #show only x range between 0 and 1.1
         plt.xlim(0, 1.1)
         plt.ylim(0, 1.1)
+        #show grid 0.1
+        plt.grid(True, which='both', alpha=0.1)
         plt.ylabel('Accepted flits')
         plt.xlabel('Injected Rate (Flits/cycle/node)')
         plt.title('Throughput [TP={}]'.format(traffic_pattern))
         
-        plt.grid()
+        #plt.grid()
         #plt.show()
         plt.savefig('./plots/'+topology+'_throughput_'+t+'.png')
         print("Throughput plot created")
@@ -231,11 +233,15 @@ def main():
         plt.xlim(0, 1.1)
         plt.ylim(0, 1.1)
 
+        #show grid 0.1 separation between lines in the grid
+        
+        plt.grid(True, which='both', alpha=0.1)
+
         plt.ylabel('Accepted flits')
         plt.xlabel('Injected Rate (Flits/cycle/node)')
         plt.title('Throughput [TP={}]'.format(traffic_pattern))
 
-        plt.grid()
+        #plt.grid()
         #plt.show()
         plt.savefig('./plots/'+topology+'_worst_throughput_'+t+'.png')
         print("Throughput plot created")
@@ -261,7 +267,8 @@ def main():
         plt.xlabel('Injected Rate (Flits/cycle/node)')
         plt.title('Hops [TP={}]'.format(traffic_pattern))
 
-        plt.grid()
+        #show grid 0.1
+        plt.grid(True, which='both', alpha=0.1)
         #plt.show()
         plt.savefig('./plots/'+topology+'_hops_'+t+'.png')
         print("Hops plot created")
