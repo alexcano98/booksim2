@@ -83,6 +83,8 @@ void Hyperx::RegisterRoutingFunctions()
 
 	gRoutingFunctionMap["omni_war_hyperx"] = &omni_war_hyperx;					 // &omni_war_priority_hyperx;
 	gRoutingFunctionMap["omni_war_priority_hyperx"] = &omni_war_priority_hyperx; // &omni_war_priority_hyperx;
+	gRoutingFunctionMap["dal_hyperx"] = &dal_hyperx;
+	
 }
 
 void Hyperx::_BuildNet(const Configuration &config)
@@ -1252,7 +1254,7 @@ void omni_war_priority_hyperx(const Router *r, const Flit *f, int in_channel,
 			{ // Si hay que recorrer esta salida...
 
 				int puerto = i * (gK - 1) + salida - 1;
-				outputs->AddRange(puerto, vcBegin, vcEnd, 0);
+				outputs->AddRange(puerto, vcBegin, vcEnd, 1);
 
 				if (missroute)
 				{
@@ -1264,14 +1266,14 @@ void omni_war_priority_hyperx(const Router *r, const Flit *f, int in_channel,
 					}
 					while (puerto_miss == puerto || puerto_miss == prohibido);
 
-					outputs->AddRange(puerto_miss, vcBegin, vcEnd, 1);
+					outputs->AddRange(puerto_miss, vcBegin, vcEnd, 0);
 					//printf del numero saltos, canales virtuales y puerto de salida
 					//printf("%d %d %d\n", missroute, available_vcs, puerto_miss);
-					/*
-					for(int k_puerto = 1; k_puerto < (gK -1); i++){
+					
+					/*for(int k_puerto = 0; k_puerto < (gK -2); i++){
 						int puerto_miss = i *(gK-1) + k_puerto;
 						if( puerto_miss != prohibido && puerto_miss != puerto ){ //es 1 hop mas....
-							outputs->AddRange( puerto_miss , vcBegin, vcEnd, 1 );
+							outputs->AddRange( puerto_miss , vcBegin, vcEnd, 0 );
 						}
 					}*/
 				}
@@ -1435,7 +1437,10 @@ void dal_hyperx(const Router *r, const Flit *f, int in_channel,
 							if(k_salida == salida-1){
 								outputs->AddRange(puerto, vcBegin + 1, vcEnd, 2); //minimo
 							}else{
-								outputs->AddRange(puerto, vcBegin + 1, vcEnd, 1); //miss
+								int nodo_fuente = f->src;
+								int condicion = (node_vectors[nodo_fuente * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
+								if(condicion == 0) //no se ha desviado aun en esta dimension
+									outputs->AddRange(puerto, vcBegin + 1, vcEnd, 1); //miss
 							}
 						}
 					}
