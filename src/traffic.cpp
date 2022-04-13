@@ -139,6 +139,7 @@ TrafficPattern * TrafficPattern::New(string const & pattern, int nodes,
             || (pattern_name == "complement_reverse_2d")
             || (pattern_name == "complement_reverse_2d_hyperx")
             || (pattern_name == "complement_reverse_3d_hyperx")
+            || (pattern_name == "swap_and_complement_3d_hyperx")
             || (pattern_name == "tornado_alex")
             || (pattern_name == "swap2")
             || (pattern_name == "tornado")

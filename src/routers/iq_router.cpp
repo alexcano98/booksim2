@@ -701,7 +701,7 @@ void IQRouter::_VCAllocEvaluate()
 				if (_vc_prioritize_empty && !dest_buf->IsEmptyFor(out_vc))
 				{
 					assert(in_priority >= 0);
-					in_priority += numeric_limits<int>::min();
+					in_priority += numeric_limits<int>::min(); //esto no lo entiendo
 				}
 
 				// On the input input side, a VC might request several output VCs.
@@ -782,7 +782,7 @@ void IQRouter::_VCAllocEvaluate()
 		_vc_allocator->PrintRequests(gWatchOut);
 	}
 
-	_vc_allocator->Allocate();
+	_vc_allocator->Allocate(); //aqui se machean las requests
 
 	if (watched)
 	{
@@ -843,7 +843,12 @@ void IQRouter::_VCAllocEvaluate()
 						   << " at input " << input
 						   << "." << endl;
 			}
-			_overall_vc_utilization[vc]++;
+			//print the vc assignation
+			//cout << "Assigning VC " << match_vc << " at output " << match_output << " to VC " << vc << " at input " << input << "." << endl;
+			
+			//_overall_vc_utilization[vc]++;
+
+			//Estaba aqui antes el vc utilization pero mejor abajo...
 
 			iter->second.second = output_and_vc;
 		}
@@ -978,6 +983,10 @@ void IQRouter::_VCAllocUpdate()
 					   << ")." << endl;
 		}
 
+		//cout << "Assigning VC " << match_vc << " at output " << match_output << " to VC " << vc << " at input " << input << "." << endl;
+		
+
+
 		int const output_and_vc = item.second.second;
 
 		if (output_and_vc >= 0)
@@ -996,7 +1005,9 @@ void IQRouter::_VCAllocUpdate()
 						   << "." << endl;
 			}
 
-			// printf("virtual channel allocation: %d %d %d\n", input, vc, match_output);
+			_overall_vc_utilization[vc]++;
+
+			//printf("virtual channel allocation: %d %d %d\n", input, match_vc, match_output);
 			//_overall_vc_utilization[vc] ++;
 
 			BufferState *const dest_buf = _next_buf[match_output];

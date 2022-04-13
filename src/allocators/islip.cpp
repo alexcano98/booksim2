@@ -37,7 +37,7 @@ iSLIP_Sparse::iSLIP_Sparse(Module *parent, const string &name,
                            int inputs, int outputs, int iters) : SparseAllocator(parent, name, inputs, outputs),
                                                                  _iSLIP_iter(iters)
 {
-  _gptrs.resize(_outputs, 0);
+  _gptrs.resize(_outputs, 0); // initialize to 0
   _aptrs.resize(_inputs, 0);
 }
 
@@ -49,14 +49,15 @@ void iSLIP_Sparse::Allocate()
   int input_offset;
   int output_offset;
 
-  map<int, sRequest>::iterator p;
+  map<int, sRequest>::iterator p; // pointer to the current request
   bool wrapped;
 
+  // initialize the _gptrs and _aptrs
   for (int iter = 0; iter < _iSLIP_iter; ++iter)
   {
     // Grant phase
 
-    vector<int> grants(_outputs, -1);
+    vector<int> grants(_outputs, -1); // -1 means no grant yet
 
     for (output = 0; output < _outputs; ++output)
     {
@@ -70,16 +71,18 @@ void iSLIP_Sparse::Allocate()
       }
 
       // A round-robin arbiter between input requests
-      input_offset = _gptrs[output];
+      input_offset = _gptrs[output]; // _gptrs is a vector of ints which represents the current input pointer for each output
 
-      p = _out_req[output].begin();
+      p = _out_req[output].begin(); // p points to the first request
       while ((p != _out_req[output].end()) &&
              (p->second.port < input_offset))
       {
-        p++;
+        p++; // move to the next request
       }
 
-      wrapped = false;
+      wrapped = false; // set to true if we have wrapped around
+      // if we have wrapped around, then p will be pointing to the first request
+      //the while loop will stop when p is pointing to the last request or if the first request which has a port >= input_offset
       while ((!wrapped) ||
              ((p != _out_req[output].end()) &&
               (p->second.port < input_offset)))

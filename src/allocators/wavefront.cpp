@@ -76,19 +76,23 @@ void Wavefront::Allocate()
 
     for (set<pair<int, int>>::const_reverse_iterator iter =
              _priorities.rbegin();
-         iter != _priorities.rend(); ++iter)
+         iter != _priorities.rend(); ++iter) // loop through the pairs in reverse order, so that we can pop the highest priority pair first
     {
 
-      for (int p = 0; p < _square; ++p)
+      // loop through the diagonals of the request matrix
+      //where _square is the max(inputs, outputs)
+      for (int p = 0; p < _square; ++p) //
       {
         for (int output = 0; output < _square; ++output)
         {
+          //the input variable means the column of the request matrix
+          //the output variable means the row of the request matrix
           int input = ((_pri + p) + (_square - output)) % _square;
           if ((input < _inputs) && (output < _outputs) &&
-              (_inmatch[input] == -1) && (_outmatch[output] == -1) &&
-              (_request[input][output].label != -1) &&
-              (_request[input][output].in_pri == iter->second) &&
-              (_request[input][output].out_pri == iter->first))
+              (_inmatch[input] == -1) && (_outmatch[output] == -1) && // if the input and output are unassigned
+              (_request[input][output].label != -1) && 
+              (_request[input][output].in_pri == iter->second) && // if the input has the highest priority
+              (_request[input][output].out_pri == iter->first)) //if the output has the highest priority
           {
             // Grant!
             _inmatch[input] = output;

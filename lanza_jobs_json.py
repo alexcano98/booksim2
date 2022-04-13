@@ -31,7 +31,34 @@ num_vcs = data["num_vcs"]
 injection_rate = data["injection_rate"]
 config_file = data["config_file"]
 topology = data["topology"]
-results_dir = data["results_dir"]
+results_dir = data["results_dir"]    
+string_to_append = data["string"]
+
+
+
+#check that exists the allocator field in the json file or if its empty
+if "allocator" in data:
+    allocator = str(data["allocator"])
+
+    #if its a list return an error
+    if isinstance(allocator, list):
+        print("Error: allocator field is a list and not a string")
+        sys.exit(1)
+
+    #check if the string is not empty
+    if allocator != "":
+        string_to_append += " sw_allocator=" + allocator + " vc_allocator=" + allocator
+
+
+#check that exists the packet size in the json file and if not, set it to default
+if "packet_size" in data:
+    packet_size = str(data["packet_size"])
+    #check that packet size is not a list
+    if isinstance(packet_size, list):
+        print("Error: packet_size field is a list and not a string")
+        sys.exit(1)
+    string_to_append += " packet_size=" + packet_size
+
 
 #check that theres a second argument and that is equal to 1 to remove the whole results directory
 if len(sys.argv) == 3 and sys.argv[2] == "1":
@@ -123,10 +150,11 @@ for traffic in data["traffic"]:
                 file.write(sbatch_string)
                 file.write("\n")
                 file.write("#SBATCH --output=" + topology_dir + "/" + traffic + "/" + str(num_vcs) + "_" + str(injection_rate) + "_" + routing_function +  ".out")
+                
                 file.write("\n")
                 file.write("#SBATCH --error=" + topology_dir + "/" + traffic + "/" + str(num_vcs) + "_" + str(injection_rate) + "_" + routing_function + ".err")
                 file.write("\n")
-                file.write("./src/booksim " + config_file + " traffic=" + traffic + " num_vcs=" + str(num_vcs) + " injection_rate=" + str(injection_rate) + " routing_function=" + routing_function)
+                file.write("./src/booksim " + config_file + " traffic=" + traffic + " num_vcs=" + str(num_vcs) + " injection_rate=" + str(injection_rate) + " routing_function=" + routing_function + string_to_append)
                 file.close()
                 #launch the job
                 subprocess.call(["sbatch", file_name])

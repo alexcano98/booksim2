@@ -284,7 +284,7 @@ void DenseAllocator::PrintRequests(ostream *os) const
 SparseAllocator::SparseAllocator(Module *parent, const string &name,
                                  int inputs, int outputs) : Allocator(parent, name, inputs, outputs)
 {
-  _in_req.resize(_inputs);
+  _in_req.resize(_inputs); // the size of this vector is the number of inputs
   _out_req.resize(_outputs);
 }
 
@@ -327,10 +327,11 @@ bool SparseAllocator::ReadRequest(sRequest &req, int in, int out) const
   assert((in >= 0) && (in < _inputs));
   assert((out >= 0) && (out < _outputs));
 
-  map<int, sRequest>::const_iterator match = _in_req[in].find(out);
+  map<int, sRequest>::const_iterator match = _in_req[in].find(out); // find the request for this output in the input's request map
+  //if match is not equal to the end of the map, then we found a request
   if (match != _in_req[in].end())
   {
-    req = match->second;
+    req = match->second; //get the request which is the value of the map
     found = true;
   }
   else
@@ -362,14 +363,14 @@ void SparseAllocator::AddRequest(int in, int out, int label,
   }
 
   sRequest req;
-  req.port = out;
+  req.port = out; //set the port to the output
   req.label = label;
   req.in_pri = in_pri;
   req.out_pri = out_pri;
 
   _in_req[in][out] = req;
 
-  req.port = in;
+  req.port = in; //set the port to the input
 
   _out_req[out][in] = req;
 }

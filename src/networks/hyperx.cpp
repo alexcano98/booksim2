@@ -75,7 +75,7 @@ void Hyperx::RegisterRoutingFunctions()
 
 	gRoutingFunctionMap["dor_hyperx"] = &dor_hyperx;
 	gRoutingFunctionMap["O1_turn_hyperx"] = &adaptive_xyyx_hyperx;
-	// gRoutingFunctionMap["adaptive_dor_exit_hyperx"] = &adaptive_dor_exit_hyperx;
+	//gRoutingFunctionMap["adaptive_dor_exit_hyperx"] = &adaptive_dor_exit_hyperx;
 	gRoutingFunctionMap["adaptive_escape_hyperx"] = &adaptive_escape_hyperx;
 	gRoutingFunctionMap["valiant_hyperx"] = &valiant_hyperx;
 	gRoutingFunctionMap["adaptive_escalera_hyperx"] = &adaptive_escalera_hyperx;
