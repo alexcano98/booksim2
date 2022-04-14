@@ -53,9 +53,9 @@ IQRouter::IQRouter(Configuration const &config, Module *parent,
 {
 	_vcs = config.GetInt("num_vcs");
 
-	_vc_busy_when_full = (config.GetInt("vc_busy_when_full") > 0);
-	_vc_prioritize_empty = (config.GetInt("vc_prioritize_empty") > 0);
-	_vc_shuffle_requests = (config.GetInt("vc_shuffle_requests") > 0);
+	_vc_busy_when_full = (config.GetInt("vc_busy_when_full") > 0); //the vc channels will be unavailabe when the buffer is full
+	_vc_prioritize_empty = (config.GetInt("vc_prioritize_empty") > 0); //means that the router will prioritize vc with empty buffer
+	_vc_shuffle_requests = (config.GetInt("vc_shuffle_requests") > 0); 
 
 	_speculative = (config.GetInt("speculative") > 0);
 	_spec_check_elig = (config.GetInt("spec_check_elig") > 0);
@@ -64,6 +64,7 @@ IQRouter::IQRouter(Configuration const &config, Module *parent,
 
 	_routing_delay = config.GetInt("routing_delay");
 	_vc_alloc_delay = config.GetInt("vc_alloc_delay");
+
 	if (!_vc_alloc_delay)
 	{
 		Error("VC allocator cannot have zero delay.");
@@ -81,7 +82,7 @@ IQRouter::IQRouter(Configuration const &config, Module *parent,
 	{
 		Error("Invalid routing function: " + rf);
 	}
-	_rf = rf_iter->second;
+	_rf = rf_iter->second; //_rf_iter is a pair<string, tRoutingFunction> and _rf is tRoutingFunction
 
 	// Alloc VC's
 	_buf.resize(_inputs);
@@ -106,7 +107,7 @@ IQRouter::IQRouter(Configuration const &config, Module *parent,
 
 	// Alloc allocators
 	string vc_alloc_type = config.GetStr("vc_allocator");
-	if (vc_alloc_type == "piggyback")
+	if (vc_alloc_type == "piggyback") 
 	{
 		if (!_speculative)
 		{
@@ -134,12 +135,13 @@ IQRouter::IQRouter(Configuration const &config, Module *parent,
 											_inputs * _input_speedup,
 											_outputs * _output_speedup);
 
+	//_input_speedup and output_speedup are the number of virtual channels per input and output respectively
 	if (!_sw_allocator)
 	{
 		Error("Unknown sw_allocator type: " + sw_alloc_type);
 	}
 
-	string spec_sw_alloc_type = config.GetStr("spec_sw_allocator");
+	string spec_sw_alloc_type = config.GetStr("spec_sw_allocator"); 
 	if (_speculative && (spec_sw_alloc_type != "prio"))
 	{
 		_spec_sw_allocator = Allocator::NewAllocator(this, "spec_sw_allocator",
@@ -160,7 +162,7 @@ IQRouter::IQRouter(Configuration const &config, Module *parent,
 	for (int i = 0; i < _inputs * _input_speedup; ++i)
 		_sw_rr_offset[i] = i % _input_speedup;
 
-	_noq = config.GetInt("noq") > 0;
+	_noq = config.GetInt("noq") > 0; //noq means next-hop output queue (not output queue) 
 	if (_noq)
 	{
 		if (_routing_delay)
@@ -244,6 +246,9 @@ void IQRouter::ReadInputs()
 	_active = _active || have_flits || have_credits;
 }
 
+/*
+* This function simulates a single clock cycle in the router. It receives flits from the input channels and assigns them to vc buffers.
+*/
 void IQRouter::_InternalStep()
 {
 	if (!_active)
@@ -251,27 +256,37 @@ void IQRouter::_InternalStep()
 		return;
 	}
 
-	_InputQueuing();
-	bool activity = !_proc_credits.empty();
+	_InputQueuing(); //reads flits from input channels and puts them in the input buffers
+	bool activity = !_proc_credits.empty(); //if there are credits to process, then there is activity
 
 	if (!_route_vcs.empty())
-		_RouteEvaluate();
+		_RouteEvaluate(); //timestamp 
+
+
 	if (_vc_allocator)
 	{
-		_vc_allocator->Clear();
+		_vc_allocator->Clear(); //clears the vc_allocator old matches....
 		if (!_vc_alloc_vcs.empty())
-			_VCAllocEvaluate();
+			_VCAllocEvaluate(); // assgins vcs to flits
 	}
+
+
 	if (_hold_switch_for_packet)
 	{
-		if (!_sw_hold_vcs.empty())
-			_SWHoldEvaluate();
+		if (!_sw_hold_vcs.empty()) //_sw_hold_vcs is a filled in the function SWAllocEvaluate
+			_SWHoldEvaluate(); //holds the flits in the switch for a single cycle
 	}
-	_sw_allocator->Clear();
+
+	_sw_allocator->Clear(); //clears the sw_allocator
+
+
 	if (_spec_sw_allocator)
 		_spec_sw_allocator->Clear();
+
 	if (!_sw_alloc_vcs.empty())
-		_SWAllocEvaluate();
+		_SWAllocEvaluate(); //assigns flits to the output ports
+
+
 	if (!_crossbar_flits.empty())
 		_SwitchEvaluate();
 
@@ -280,11 +295,15 @@ void IQRouter::_InternalStep()
 		_RouteUpdate();
 		activity = activity || !_route_vcs.empty();
 	}
+	
+	
 	if (!_vc_alloc_vcs.empty())
 	{
-		_VCAllocUpdate();
+		_VCAllocUpdate(); 
 		activity = activity || !_vc_alloc_vcs.empty();
 	}
+	
+	
 	if (_hold_switch_for_packet)
 	{
 		if (!_sw_hold_vcs.empty())
@@ -293,11 +312,15 @@ void IQRouter::_InternalStep()
 			activity = activity || !_sw_hold_vcs.empty();
 		}
 	}
+	
+	
 	if (!_sw_alloc_vcs.empty())
 	{
 		_SWAllocUpdate();
 		activity = activity || !_sw_alloc_vcs.empty();
 	}
+	
+	
 	if (!_crossbar_flits.empty())
 	{
 		_SwitchUpdate();
@@ -512,6 +535,7 @@ void IQRouter::_InputQueuing()
 // routing
 //------------------------------------------------------------------------------
 
+//_RouteEvaluate updates the timestamp of the flit in the input buffer   
 void IQRouter::_RouteEvaluate()
 {
 	assert(_routing_delay);
@@ -611,12 +635,14 @@ void IQRouter::_RouteUpdate()
 // VC allocation
 //------------------------------------------------------------------------------
 
+//iterate over all the vc_alloc_vcs and try to allocate a vc to each one
 void IQRouter::_VCAllocEvaluate()
 {
 	assert(_vc_allocator);
 
 	bool watched = false;
 
+	//_vc_alloc_vcs is filled by the _VCAllocUpdate function and is emptied by the _VCAllocEvaluate function
 	for (deque<pair<int, pair<pair<int, int>, int>>>::iterator iter = _vc_alloc_vcs.begin();
 		 iter != _vc_alloc_vcs.end();
 		 ++iter)
@@ -653,6 +679,7 @@ void IQRouter::_VCAllocEvaluate()
 					   << ")." << endl;
 		}
 
+		 //the set of outputs that can be reached from the current input, calculated in the _VCAllocUpdate function
 		OutputSet const *const route_set = cur_buf->GetRouteSet(vc);
 		assert(route_set);
 
@@ -1019,7 +1046,7 @@ void IQRouter::_VCAllocUpdate()
 			cur_buf->SetState(vc, VC::active);
 			if (!_speculative)
 			{
-				_sw_alloc_vcs.push_back(make_pair(-1, make_pair(item.second.first, -1)));
+				_sw_alloc_vcs.push_back(make_pair(-1, make_pair(item.second.first, -1))); //input, vc are in the item.second.first
 			}
 		}
 		else
@@ -1056,7 +1083,7 @@ void IQRouter::_VCAllocUpdate()
 void IQRouter::_SWHoldEvaluate()
 {
 	assert(_hold_switch_for_packet);
-
+	 // _sw_hold_vcs is filled in _SWAllocEvaluate
 	for (deque<pair<int, pair<pair<int, int>, int>>>::iterator iter = _sw_hold_vcs.begin();
 		 iter != _sw_hold_vcs.end();
 		 ++iter)
@@ -1504,7 +1531,7 @@ bool IQRouter::_SWAllocAddReq(int input, int vc, int output)
 void IQRouter::_SWAllocEvaluate()
 {
 	bool watched = false;
-
+	//_sw_alloc_vcs filled by _SWAllocUpdate
 	for (deque<pair<int, pair<pair<int, int>, int>>>::iterator iter = _sw_alloc_vcs.begin();
 		 iter != _sw_alloc_vcs.end();
 		 ++iter)
@@ -1679,7 +1706,8 @@ void IQRouter::_SWAllocEvaluate()
 		}
 	}
 
-	_sw_allocator->Allocate();
+	_sw_allocator->Allocate(); //Allocate the flits...
+	
 	if (_spec_sw_allocator)
 		_spec_sw_allocator->Allocate();
 

@@ -52,14 +52,13 @@ void iSLIP_Sparse::Allocate()
   map<int, sRequest>::iterator p; // pointer to the current request
   bool wrapped;
 
-  // initialize the _gptrs and _aptrs
   for (int iter = 0; iter < _iSLIP_iter; ++iter)
   {
     // Grant phase
 
     vector<int> grants(_outputs, -1); // -1 means no grant yet
 
-    for (output = 0; output < _outputs; ++output)
+    for (output = 0; output < _outputs; ++output) 
     {
 
       // Skip loop if there are no requests
@@ -77,14 +76,14 @@ void iSLIP_Sparse::Allocate()
       while ((p != _out_req[output].end()) &&
              (p->second.port < input_offset))
       {
-        p++; // move to the next request
+        p++;
       }
 
       //now p points to the first request with input_offset as input port
 
-      wrapped = false; // set to true if we have wrapped around
-      // if we have wrapped around, then p will be pointing to the first request
-      //the while loop will stop when p is pointing to the last request or if the first request which has a port >= input_offset
+      wrapped = false;
+      // if we have wrapped around, then p will be pointing to the first request and go until p->second.port < input_offset
+      //the while loop will stop when p reachs the end of the list or if _inmatch[p->second.port] == -1
       while ((!wrapped) ||
              ((p != _out_req[output].end()) &&
               (p->second.port < input_offset)))
@@ -114,6 +113,8 @@ void iSLIP_Sparse::Allocate()
         p++;
       }
     }
+
+    //AQUI UN OUTPUT PUEDE TENER VARIOS INPUTS ASIGNADOS, PERO SE TERMINARA ASIGNANDO 1 A 1 AL FINAL DE LA ITERACION GRANDE.
 
 #ifdef DEBUG_ISLIP
     cout << "grants: ";

@@ -84,7 +84,11 @@ BookSimConfig::BookSimConfig( )
 
   _int_map["output_delay"] = 0;
   _int_map["credit_delay"] = 0;
-  _float_map["internal_speedup"] = 1.0;
+  _float_map["internal_speedup"] = 1.0; //internal_speedup is used to scale-up the
+                                        //internal clock frequency of the router
+                                        //to the same frequency as the network
+                                        //clock.  This is used to allow for
+                                        //better accuracy in simulation.
 
   //with switch speedup flits requires otuput buffering
   //full output buffer will cancel switch allocation requests
