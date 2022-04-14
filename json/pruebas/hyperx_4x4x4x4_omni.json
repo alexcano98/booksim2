@@ -1,10 +1,11 @@
 {
     "topology" : "hyperx_4x4x4x4",
-    "injection_rate" : [0.1, 0.9],
-    "traffic": ["complement_reverse_3d_hyperx", "swap2"],
-    "routing_function" :["omni_war", "omni_war_priority"],
-    "results_dir" : "prueba/omniwar_4x4x4x4",
+    "injection_rate" : [0.9],
+    "traffic": ["complement_reverse_3d_hyperx"],
+    "routing_function" :["dal"],
+    "results_dir" : "prueba/allocator_wavefront/omniwar_4x4x4x4",
     "config_file" : "runfiles/hyperx/hyperx_topology_2vcs_4x4x4x4",
-    "num_vcs" : [3,6,9]
+    "num_vcs" : [6],
+    "allocator" : "wavefront"
     
 }

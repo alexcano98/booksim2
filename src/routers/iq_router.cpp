@@ -701,7 +701,7 @@ void IQRouter::_VCAllocEvaluate()
 				if (_vc_prioritize_empty && !dest_buf->IsEmptyFor(out_vc))
 				{
 					assert(in_priority >= 0);
-					in_priority += numeric_limits<int>::min(); //esto no lo entiendo
+					in_priority += numeric_limits<int>::min(); 
 				}
 
 				// On the input input side, a VC might request several output VCs.

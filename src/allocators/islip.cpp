@@ -80,6 +80,8 @@ void iSLIP_Sparse::Allocate()
         p++; // move to the next request
       }
 
+      //now p points to the first request with input_offset as input port
+
       wrapped = false; // set to true if we have wrapped around
       // if we have wrapped around, then p will be pointing to the first request
       //the while loop will stop when p is pointing to the last request or if the first request which has a port >= input_offset

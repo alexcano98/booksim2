@@ -1,0 +1,10 @@
+{
+    "topology" : "hyperx_16x16x16x16",
+    "injection_rate" : [1.0],
+    "traffic": ["complement_reverse_3d_hyperx","tornado_alex_ndim", "uniform"],
+    "routing_function" :["dal", "adaptive_escape", "adaptive_dor_exit"],
+    "results_dir" : "prueba/deadlock",
+    "config_file" : "runfiles/hyperx/hyperx_topology_2vcs_16x16x16x16",
+    "num_vcs" : [4],
+    "allocator" : "wavefront"
+}

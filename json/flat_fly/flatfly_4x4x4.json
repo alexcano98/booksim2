@@ -3,7 +3,7 @@
     "injection_rate" : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
     "traffic": ["tornado", "uniform"],
     "routing_function" :["dor", "valiant"],
-    "results_dir" : "results/flat_fly/",
+    "results_dir" : "results2/flat_fly",
     "config_file" : "runfiles/flat_fly/flatfly_topology_2vcs_4x4x4",
     "num_vcs" : [2]
 }

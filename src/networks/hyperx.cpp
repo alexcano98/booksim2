@@ -1254,7 +1254,7 @@ void omni_war_priority_hyperx(const Router *r, const Flit *f, int in_channel,
 			{ // Si hay que recorrer esta salida...
 
 				int puerto = i * (gK - 1) + salida - 1;
-				outputs->AddRange(puerto, vcBegin, vcEnd, 1);
+				outputs->AddRange(puerto, vcBegin, vcEnd, 0);
 
 				if (missroute)
 				{
@@ -1266,7 +1266,7 @@ void omni_war_priority_hyperx(const Router *r, const Flit *f, int in_channel,
 					}
 					while (puerto_miss == puerto || puerto_miss == prohibido);
 
-					outputs->AddRange(puerto_miss, vcBegin, vcEnd, 0);
+					outputs->AddRange(puerto_miss, vcBegin, vcEnd, 1);
 					//printf del numero saltos, canales virtuales y puerto de salida
 					//printf("%d %d %d\n", missroute, available_vcs, puerto_miss);
 					
@@ -1435,12 +1435,12 @@ void dal_hyperx(const Router *r, const Flit *f, int in_channel,
 							int puerto = i * (gK - 1) + k_salida; //salida - 1
 
 							if(k_salida == salida-1){
-								outputs->AddRange(puerto, vcBegin + 1, vcEnd, 2); //minimo
+								outputs->AddRange(puerto, vcBegin + 1, vcEnd, 1); //minimo
 							}else{
 								int nodo_fuente = f->src;
 								int condicion = (node_vectors[nodo_fuente * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
 								if(condicion == 0) //no se ha desviado aun en esta dimension
-									outputs->AddRange(puerto, vcBegin + 1, vcEnd, 1); //miss
+									outputs->AddRange(puerto, vcBegin + 1, vcEnd, 2); //miss
 							}
 						}
 					}
