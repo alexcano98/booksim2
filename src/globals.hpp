@@ -44,6 +44,8 @@ extern int gK;
 extern int gN;
 extern int gC;
 
+extern int buff_size;
+
 extern int gNodes;
 
 extern bool gTrace;

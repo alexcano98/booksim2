@@ -56,7 +56,8 @@ void Hyperx::_ComputeSize(const Configuration &config)
 	_n = config.GetInt("n");
 	_c = config.GetInt("c");
 	_xr = config.GetInt("xr");
-
+	buff_size = config.GetInt("vc_buf_size") * config.GetInt("num_vcs");
+	
 	assert(_xr == _c); // cosas para el trafico tornado entre otros....
 
 	gC = _c;
@@ -1252,7 +1253,8 @@ void omni_war_priority_hyperx(const Router *r, const Flit *f, int in_channel,
 			{ // Si hay que recorrer esta salida...
 
 				int puerto_min = i * (gK - 1) + salida - 1;
-				outputs->AddRange(puerto_min, vcBegin, vcEnd, 0);
+				int prio = (buff_size - r->GetUsedCredit(puerto_min)) * (gN - distance_to_dest + 1); //+1 es por ser minimo, un salto menos...
+				outputs->AddRange(puerto_min, vcBegin, vcEnd, prio);
 
 				if (missroute > 1)
 				{
@@ -1263,7 +1265,8 @@ void omni_war_priority_hyperx(const Router *r, const Flit *f, int in_channel,
 							int puerto_miss = i * (gK - 1) + k_salida; // salida - 1
 							if (r->GetUsedCredit(puerto_min) * distance_to_dest > r->GetUsedCredit(puerto_miss) * (distance_to_dest + 1))
 							{
-								outputs->AddRange(puerto_miss, vcBegin, vcEnd, 1);
+								int prio_miss = (buff_size - r->GetUsedCredit(puerto_miss)) * (gN - distance_to_dest);
+								outputs->AddRange(puerto_miss, vcBegin, vcEnd, prio_miss);
 							}												 
 						}
 					}
@@ -1340,6 +1343,7 @@ void adaptive_escape_hyperx(const Router *r, const Flit *f, int in_channel,
 			outputs->AddRange(out_port, vcEnd, vcEnd, 0);
 
 			// if (f->vc != vcEnd)
+			//dsf
 			//{ // adaptativo
 
 			int nodo_destino = targetr;
