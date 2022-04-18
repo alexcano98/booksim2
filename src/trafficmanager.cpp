@@ -1920,6 +1920,7 @@ TrafficManager * TrafficManager::New(Configuration const & config,
         }
 
         void TrafficManager::UpdateStats() {
+          
           #if defined(TRACK_FLOWS) || defined(TRACK_STALLS)
           for(int c = 0; c < _classes; ++c) {
             #ifdef TRACK_FLOWS

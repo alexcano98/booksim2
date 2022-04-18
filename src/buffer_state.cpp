@@ -551,7 +551,7 @@ BufferState::BufferState( const Configuration& config, Module *parent, const str
 
   _vc_occupancy.resize(_vcs, 0);
 
-  _in_use_by.resize(_vcs, -1);
+  _in_use_by.resize(_vcs, -1); // -1 = not in use by anyone, 0 = in use by tail, 1 = in use by head
   _tail_sent.resize(_vcs, false);
 
   _last_id.resize(_vcs, -1);
