@@ -159,13 +159,15 @@ public:
     return _active_packets[c];
   }
 
-  inline void ResetFlowStats(int c) {
+    inline void ResetFlowStats(int c) {
     assert((c >= 0) && (c < _classes));
     _received_flits[c].assign(_received_flits[c].size(), 0);
     _sent_flits[c].assign(_sent_flits[c].size(), 0);
     _overall_vc_utilization.assign(_overall_vc_utilization.size(), 0);
   }
+
 #endif
+
 
   virtual vector<int> UsedCredits() const = 0;
   virtual vector<int> FreeCredits() const = 0;

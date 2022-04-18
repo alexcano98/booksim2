@@ -77,7 +77,7 @@ void Wavefront::Allocate()
     for (set<pair<int, int>>::const_reverse_iterator iter =
              _priorities.rbegin();
          iter != _priorities.rend(); ++iter) // loop through the pairs in reverse order, so that we can pop the highest priority pair first
-    {
+    { 
 
       // loop through the diagonals of the request matrix
       //where _square is the max(inputs, outputs)

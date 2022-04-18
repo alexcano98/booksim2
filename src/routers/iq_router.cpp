@@ -759,6 +759,8 @@ void IQRouter::_VCAllocEvaluate()
 									   << ")." << endl;
 							watched = true;
 						}
+
+						//if(dest_buf->IsFullFor(out_vc)) assert(false);
 						int const input_and_vc = _vc_shuffle_requests ? (vc * _inputs + input) : (input * _vcs + vc);
 						_vc_allocator->AddRequest(input_and_vc, out_port * _vcs + out_vc,
 												  0, in_priority, out_priority);
@@ -846,7 +848,7 @@ void IQRouter::_VCAllocEvaluate()
 			//print the vc assignation
 			//cout << "Assigning VC " << match_vc << " at output " << match_output << " to VC " << vc << " at input " << input << "." << endl;
 			
-			//_overall_vc_utilization[vc]++;
+			_overall_vc_utilization[vc]++;
 
 			//Estaba aqui antes el vc utilization pero mejor abajo...
 
@@ -1005,7 +1007,7 @@ void IQRouter::_VCAllocUpdate()
 						   << "." << endl;
 			}
 
-			_overall_vc_utilization[vc]++;
+			//_overall_vc_utilization[vc]++;
 
 			//printf("virtual channel allocation: %d %d %d\n", input, match_vc, match_output);
 			//_overall_vc_utilization[vc] ++;

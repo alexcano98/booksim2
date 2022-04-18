@@ -75,7 +75,7 @@ void Hyperx::RegisterRoutingFunctions()
 
 	gRoutingFunctionMap["dor_hyperx"] = &dor_hyperx;
 	gRoutingFunctionMap["O1_turn_hyperx"] = &adaptive_xyyx_hyperx;
-	//gRoutingFunctionMap["adaptive_dor_exit_hyperx"] = &adaptive_dor_exit_hyperx;
+	gRoutingFunctionMap["adaptive_dor_exit_hyperx"] = &adaptive_dor_exit_hyperx;
 	gRoutingFunctionMap["adaptive_escape_hyperx"] = &adaptive_escape_hyperx;
 	gRoutingFunctionMap["valiant_hyperx"] = &valiant_hyperx;
 	gRoutingFunctionMap["adaptive_escalera_hyperx"] = &adaptive_escalera_hyperx;
@@ -84,7 +84,6 @@ void Hyperx::RegisterRoutingFunctions()
 	gRoutingFunctionMap["omni_war_hyperx"] = &omni_war_hyperx;					 // &omni_war_priority_hyperx;
 	gRoutingFunctionMap["omni_war_priority_hyperx"] = &omni_war_priority_hyperx; // &omni_war_priority_hyperx;
 	gRoutingFunctionMap["dal_hyperx"] = &dal_hyperx;
-	
 }
 
 void Hyperx::_BuildNet(const Configuration &config)
@@ -128,8 +127,8 @@ void Hyperx::_BuildNet(const Configuration &config)
 
 					// Aqui habria que darle la vuelta al adj
 					adj = adj - (_k - 1) * salto - salto; // el ultimo (- salto para dejarlo bien)
-					// chan_input+= (-_k+1); //lo pongo apuntando al siguiente, puede ser negativo, va hacia atras
-					// chan_output+= (-_k+1); //lo pongo apuntando al siguiente,  puede ser negativo, va hacia atras
+														  // chan_input+= (-_k+1); //lo pongo apuntando al siguiente, puede ser negativo, va hacia atras
+														  // chan_output+= (-_k+1); //lo pongo apuntando al siguiente,  puede ser negativo, va hacia atras
 				}
 
 				adj = (adj + salto);
@@ -1230,7 +1229,6 @@ void omni_war_priority_hyperx(const Router *r, const Flit *f, int in_channel,
 		}
 		else
 		{
-
 			vcBegin = f->vc + 1;
 			vcEnd = f->vc + 1;
 		}
@@ -1253,23 +1251,27 @@ void omni_war_priority_hyperx(const Router *r, const Flit *f, int in_channel,
 			if (salida != 0)
 			{ // Si hay que recorrer esta salida...
 
-				int puerto = i * (gK - 1) + salida - 1;
-				outputs->AddRange(puerto, vcBegin, vcEnd, 0);
+				int puerto_min = i * (gK - 1) + salida - 1;
+				outputs->AddRange(puerto_min, vcBegin, vcEnd, 0);
 
-				if (missroute)
+				if (missroute > 1)
 				{
-					int random;
-					int puerto_miss;
+					for (int k_salida = 0; k_salida < (gK - 2); k_salida++)
 					{
-						random = RandomInt(gK - 2);
-						puerto_miss = i * (gK - 1) + random;
+						if (k_salida != salida - 1)
+						{
+							int puerto_miss = i * (gK - 1) + k_salida; // salida - 1
+							if (r->GetUsedCredit(puerto_min) * distance_to_dest > r->GetUsedCredit(puerto_miss) * (distance_to_dest + 1))
+							{
+								outputs->AddRange(puerto_miss, vcBegin, vcEnd, 1);
+							}												 
+						}
 					}
-					while (puerto_miss == puerto || puerto_miss == prohibido);
 
-					outputs->AddRange(puerto_miss, vcBegin, vcEnd, 1);
-					//printf del numero saltos, canales virtuales y puerto de salida
-					//printf("%d %d %d\n", missroute, available_vcs, puerto_miss);
 					
+					// printf del numero saltos, canales virtuales y puerto de salida
+					// printf("%d %d %d\n", missroute, available_vcs, puerto_miss);
+
 					/*for(int k_puerto = 0; k_puerto < (gK -2); i++){
 						int puerto_miss = i *(gK-1) + k_puerto;
 						if( puerto_miss != prohibido && puerto_miss != puerto ){ //es 1 hop mas....
@@ -1335,35 +1337,33 @@ void adaptive_escape_hyperx(const Router *r, const Flit *f, int in_channel,
 		else
 		{
 			out_port = calculateDOR_routers(targetr, r->GetID());
-			outputs->AddRange(out_port, vcBegin, vcBegin, 0);
+			outputs->AddRange(out_port, vcEnd, vcEnd, 0);
 
-			if (f->vc != vcEnd)
-			{ // adaptativo
+			// if (f->vc != vcEnd)
+			//{ // adaptativo
 
-				int nodo_destino = targetr;
-				int nodo_actual = r->GetID();
+			int nodo_destino = targetr;
+			int nodo_actual = r->GetID();
 
-				for (int i = 0; i < gN; i++)
-				{
+			for (int i = 0; i < gN; i++)
+			{
 
-					int salida = (node_vectors[nodo_destino * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
+				int salida = (node_vectors[nodo_destino * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
 
-					if (salida != 0)
-					{ // Si hay que recorrer esta salida...
+				if (salida != 0)
+				{ // Si hay que recorrer esta salida...
 
-						int puerto = i * (gK - 1) + salida - 1;
-						outputs->AddRange(puerto, vcBegin + 1, vcEnd, 1);
-						
-					}
+					int puerto = i * (gK - 1) + salida - 1;
+					outputs->AddRange(puerto, vcBegin, vcEnd - 1, 1);
 				}
 			}
+			//}
 		}
 	}
 }
 
-
 void dal_hyperx(const Router *r, const Flit *f, int in_channel,
-							OutputSet *outputs, bool inject)
+				OutputSet *outputs, bool inject)
 {
 
 	int vcBegin = 0, vcEnd = gNumVCs - 1;
@@ -1399,7 +1399,7 @@ void dal_hyperx(const Router *r, const Flit *f, int in_channel,
 	{
 
 		out_port = -1;
-		outputs->AddRange(out_port, vcBegin, vcEnd);
+		outputs->AddRange(out_port, vcBegin + 1, vcEnd);
 	}
 	else
 	{ // si no se inyecta
@@ -1417,7 +1417,7 @@ void dal_hyperx(const Router *r, const Flit *f, int in_channel,
 			out_port = calculateDOR_routers(targetr, r->GetID());
 			outputs->AddRange(out_port, vcBegin, vcBegin, 0);
 
-			if (f->vc != vcEnd)
+			if (f->vc != vcBegin)
 			{ // adaptativo
 
 				int nodo_destino = targetr;
@@ -1430,17 +1430,23 @@ void dal_hyperx(const Router *r, const Flit *f, int in_channel,
 
 					if (salida != 0)
 					{ // Si hay que recorrer esta salida...
-						for(int k_salida = 0; k_salida < (gK -2); k_salida++){
-							
-							int puerto = i * (gK - 1) + k_salida; //salida - 1
 
-							if(k_salida == salida-1){
-								outputs->AddRange(puerto, vcBegin + 1, vcEnd, 1); //minimo
-							}else{
-								int nodo_fuente = f->src;
+						int puerto_min = i * (gK - 1) + salida - 1;
+						outputs->AddRange(puerto_min, vcBegin + 1, vcEnd, 1); // minimo
+
+						for (int k_salida = 0; k_salida < (gK - 2); k_salida++)
+						{
+							if (k_salida != salida - 1)
+							{
+
+								int puerto = i * (gK - 1) + k_salida; // salida - 1
+								int nodo_fuente = f->src / gC;
 								int condicion = (node_vectors[nodo_fuente * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
-								if(condicion == 0) //no se ha desviado aun en esta dimension
-									outputs->AddRange(puerto, vcBegin + 1, vcEnd, 2); //miss
+
+								if (condicion == 0 && r->GetUsedCredit(puerto_min) * i > r->GetUsedCredit(puerto) * (i + 1))
+								{
+									outputs->AddRange(puerto, vcBegin + 1, vcEnd, 2); // miss
+								}													  // no se ha desviado aun en esta dimension
 							}
 						}
 					}
