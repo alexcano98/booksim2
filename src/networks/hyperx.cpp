@@ -1335,7 +1335,7 @@ void adaptive_escape_hyperx(const Router *r, const Flit *f, int in_channel,
 		else
 		{
 			out_port = calculateDOR_routers(targetr, r->GetID());
-			outputs->AddRange(out_port, vcBegin, vcBegin, 0);
+			outputs->AddRange(out_port, vcEnd, vcEnd, 0);
 
 			if (f->vc != vcEnd)
 			{ // adaptativo
@@ -1352,7 +1352,7 @@ void adaptive_escape_hyperx(const Router *r, const Flit *f, int in_channel,
 					{ // Si hay que recorrer esta salida...
 
 						int puerto = i * (gK - 1) + salida - 1;
-						outputs->AddRange(puerto, vcBegin + 1, vcEnd, 1);
+						outputs->AddRange(puerto, vcBegin , vcEnd - 1, 1);
 						
 					}
 				}

@@ -62,7 +62,7 @@ IQRouter::IQRouter(Configuration const &config, Module *parent,
 	_spec_check_cred = (config.GetInt("spec_check_cred") > 0);
 	_spec_mask_by_reqs = (config.GetInt("spec_mask_by_reqs") > 0);
 
-	_routing_delay = config.GetInt("routing_delay");
+	_routing_delay = config.GetInt("routing_delay"); //the time it takes to route a flit in cycles
 	_vc_alloc_delay = config.GetInt("vc_alloc_delay");
 
 	if (!_vc_alloc_delay)
@@ -392,6 +392,8 @@ bool IQRouter::_ReceiveCredits()
 // input queuing
 //------------------------------------------------------------------------------
 
+//_InputQueuing() reads flits from the in_queue_flits and puts them in the input buffers
+//_InputQueuing() is called in _InternalStep()
 void IQRouter::_InputQueuing()
 {
 	for (map<int, Flit *>::const_iterator iter = _in_queue_flits.begin();
@@ -428,7 +430,7 @@ void IQRouter::_InputQueuing()
 			}
 			*gWatchOut << ")." << endl;
 		}
-		cur_buf->AddFlit(vc, f);
+		cur_buf->AddFlit(vc, f); 
 
 #ifdef TRACK_FLOWS
 		++_stored_flits[f->cl][input];
@@ -492,7 +494,7 @@ void IQRouter::_InputQueuing()
 			}
 		}
 	}
-	_in_queue_flits.clear();
+	_in_queue_flits.clear(); 
 
 	while (!_proc_credits.empty())
 	{
@@ -642,7 +644,6 @@ void IQRouter::_VCAllocEvaluate()
 
 	bool watched = false;
 
-	//_vc_alloc_vcs is filled by the _VCAllocUpdate function and is emptied by the _VCAllocEvaluate function
 	for (deque<pair<int, pair<pair<int, int>, int>>>::iterator iter = _vc_alloc_vcs.begin();
 		 iter != _vc_alloc_vcs.end();
 		 ++iter)
@@ -679,7 +680,6 @@ void IQRouter::_VCAllocEvaluate()
 					   << ")." << endl;
 		}
 
-		 //the set of outputs that can be reached from the current input, calculated in the _VCAllocUpdate function
 		OutputSet const *const route_set = cur_buf->GetRouteSet(vc);
 		assert(route_set);
 
@@ -879,7 +879,7 @@ void IQRouter::_VCAllocEvaluate()
 
 			iter->second.second = output_and_vc;
 		}
-		else
+		else //puede haber requests que no se atiendan en el allocator
 		{
 
 			if (f->watch)
@@ -938,6 +938,8 @@ void IQRouter::_VCAllocEvaluate()
 			assert(f);
 			assert(f->vc == vc);
 			assert(f->head);
+
+			//Esto no sobra aqui??? ya estaba comprobado de arriba....
 
 			if (!dest_buf->IsAvailableFor(match_vc))
 			{
