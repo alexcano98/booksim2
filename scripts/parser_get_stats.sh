@@ -37,48 +37,81 @@ mkdir $PARSED_DIR
 
 
 # Check if the injection rates file exists
-if [ ! -f "${OUT_DIR}/injection_rates" ]; then
+if [ ! -f "${OUT_DIR}/injection_rates.txt" ]; then
     echo "Error: "${OUT_DIR}/injection_rates" does not exist"
     exit 1
 else
-    INJECTION_RATES=$(cat ${OUT_DIR}/injection_rates)
+    INJECTION_RATES=$(cat ${OUT_DIR}/injection_rates.txt)
 fi
 
 # Check if the routings file exists
-if [ ! -f "${OUT_DIR}/routings" ]; then
+if [ ! -f "${OUT_DIR}/routing_functions.txt" ]; then
     echo "Error: "${OUT_DIR}/routings" does not exist"
     exit 1
 else
-    ROUTINGS=$(cat ${OUT_DIR}/routings)
+    ROUTINGS=$(cat ${OUT_DIR}/routing_functions.txt)
 fi
 
 # Check if the traffics file exists
-if [ ! -f "${OUT_DIR}/traffics" ]; then
+if [ ! -f "${OUT_DIR}/traffics.txt" ]; then
     echo "Error: "${OUT_DIR}/traffics" does not exist"
     exit 1
 else
-    TRAFFICS=$(cat ${OUT_DIR}/traffics)
+    TRAFFICS=$(cat ${OUT_DIR}/traffics.txt)
 fi
 
+#check if the num_vcs file exists
+if [ ! -f "${OUT_DIR}/num_vcs.txt" ]; then
+    echo "Error: "${OUT_DIR}/num_vcs" does not exist"
+    exit 1
+else
+    NUM_VCS=$(cat ${OUT_DIR}/num_vcs.txt)
+fi
 
+#check if the packet_sizes file exists
+if [ ! -f "${OUT_DIR}/packet_sizes.txt" ]; then
+    echo "Error: "${OUT_DIR}/packet_sizes" does not exist"
+    exit 1
+else
+    PACKET_SIZES=$(cat ${OUT_DIR}/packet_sizes.txt)
+fi
+
+#check if the allocators file exists
+if [ ! -f "${OUT_DIR}/allocators.txt" ]; then
+    echo "Error: "${OUT_DIR}/allocators" does not exist"
+    exit 1
+else
+    ALLOCATORS=$(cat ${OUT_DIR}/allocators.txt)
+fi
 
 
 for traffic in $TRAFFICS;
 do
-  mkdir -p ${PARSED_DIR}/${traffic}
-  for routing in $ROUTINGS;
-  do
-    for inj_rate in $INJECTION_RATES;
+    mkdir -p ${PARSED_DIR}/${traffic}
+    for routing in $ROUTINGS;
     do
-        # Parse stats from sim
-        grep "results:" ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out | sed 's/results://g' >> ${PARSED_DIR}/${traffic}/${routing}_sim_out.csv
-        grep "Time taken is" ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out| awk '{print $4}' >> ${PARSED_DIR}/${traffic}/${routing}_cycles.csv
-        grep "Total run time" ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out | awk '{print $4}' >> ${PARSED_DIR}/${traffic}/${routing}_run_time.csv
-        grep "Hops average" ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out | awk '{print $4}' >> ${PARSED_DIR}/${traffic}/${routing}_hops_avg.csv
+        for allocator in $ALLOCATORS; 
+        do
+            for num_vcs in $NUM_VCS;
+            do
+                for packet_size in $PACKET_SIZES;
+                do
+                    for inj_rate in $INJECTION_RATES;
+                    do
+                    
+                    # Parse stats from sim
+                    grep "results:" ${OUT_DIR}/${traffic}/${num_vcs}_${inj_rate}_${routing}_${allocator}_${packet_size}.out | sed 's/results://g' >> ${PARSED_DIR}/${traffic}/${num_vcs}_${allocator}_${routing}_${packet_size}_sim_out.csv
+                    grep "Time taken is" ${OUT_DIR}/${traffic}/${num_vcs}_${inj_rate}_${routing}_${allocator}_${packet_size}.out| awk '{print $4}' >> ${PARSED_DIR}/${traffic}/${num_vcs}_${allocator}_${routing}_${packet_size}_cycles.csv
+                    grep "Total run time" ${OUT_DIR}/${traffic}/${num_vcs}_${inj_rate}_${routing}_${allocator}_${packet_size}.out | awk '{print $4}' >> ${PARSED_DIR}/${traffic}/${num_vcs}_${allocator}_${routing}_${packet_size}_run_time.csv
+                    grep "Hops average" ${OUT_DIR}/${traffic}/${num_vcs}_${inj_rate}_${routing}_${allocator}_${packet_size}.out | awk '{print $4}' >> ${PARSED_DIR}/${traffic}/${num_vcs}_${allocator}_${routing}_${packet_size}_hops_avg.csv
+                
+                    done
+                    # Delete "results:" from the beginning of the lines
+                    sed -i 's/results://g' ${PARSED_DIR}/${traffic}/${num_vcs}_${allocator}_${routing}_${packet_size}_sim_out.csv            
+                done  
+            done
+        done
     done
-    # Delete "results:" from the beginning of the lines
-    sed -i 's/results://g' ${PARSED_DIR}/${traffic}/${routing}_sim_out.csv
-  done
 done
 
 
@@ -92,6 +125,10 @@ do
 done
 
 # Copy the injection rates file to the parsed directory
-cp ${OUT_DIR}/injection_rates ${PARSED_DIR}/injection_rates
-cp ${OUT_DIR}/routings ${PARSED_DIR}/routings
-cp ${OUT_DIR}/traffics ${PARSED_DIR}/traffics
+cp ${OUT_DIR}/injection_rates.txt ${PARSED_DIR}/injection_rates.txt
+cp ${OUT_DIR}/routing_functions.txt ${PARSED_DIR}/routing_functions.txt
+cp ${OUT_DIR}/traffics.txt ${PARSED_DIR}/traffics.txt
+cp ${OUT_DIR}/num_vcs.txt ${PARSED_DIR}/num_vcs.txt
+cp ${OUT_DIR}/packet_sizes.txt ${PARSED_DIR}/packet_sizes.txt
+cp ${OUT_DIR}/allocators.txt ${PARSED_DIR}/allocators.txt
+

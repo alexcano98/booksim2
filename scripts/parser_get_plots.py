@@ -38,6 +38,7 @@ def main():
     topology  = sys.argv[2]
 
     if topology == "":
+        print("Topology not specified")
         exit(1)
 
     # check if the output directory exists
@@ -50,33 +51,60 @@ def main():
 
 
     # Check if injection_rate exists
-    if not os.path.exists(out_dir + "/injection_rates"):
+    if not os.path.exists(out_dir + "/injection_rates.txt"):
         print("Error: injection_rates file does not exist")
         exit(1)
     # Read injection rates from file as a float separated by space
-    with open(out_dir + "/injection_rates", "r") as f:
+    with open(out_dir + "/injection_rates.txt", "r") as f:
         injected_rate = [float(x) for x in f.read().split()]
     print("Injection rates: ", injected_rate)
 
 
     # Check if routings exists
-    if not os.path.exists(out_dir + "/routings"):
-        print("Error: routings file does not exist")
+    if not os.path.exists(out_dir + "/routing_functions.txt"):
+        print("Error: routing_functions.txt file does not exist")
         exit(1)
     # Read routings from file as a float separated by space
-    with open(out_dir + "/routings", "r") as f:
+    with open(out_dir + "/routing_functions.txt", "r") as f:
         routings = [x for x in f.read().split()]
-    print("routings ", routings)
+    print("routing_functions.txt ", routings)
 
 
     # Check if traffics exists
-    if not os.path.exists(out_dir + "/traffics"):
+    if not os.path.exists(out_dir + "/traffics.txt"):
         print("Error: traffics file does not exist")
         exit(1)
     # Read traffics from file as a float separated by space
-    with open(out_dir + "/traffics", "r") as f:
+    with open(out_dir + "/traffics.txt", "r") as f:
         traffics = [x for x in f.read().split()]
     print("traffics: ", traffics)
+
+    #check if num_vcs exists
+    if not os.path.exists(out_dir + "/num_vcs.txt"):
+        print("Error: num_vcs file does not exist")
+        exit(1)
+    # Read num_vcs from file as a float separated by space
+    with open(out_dir + "/num_vcs.txt", "r") as f:
+        num_vcs = [x for x in f.read().split()]
+    print("num_vcs: ", num_vcs)
+
+
+    #check if allocators exists
+    if not os.path.exists(out_dir + "/allocators.txt"):
+        print("Error: allocators file does not exist")
+        exit(1)
+    # Read allocators from file as a float separated by space
+    with open(out_dir + "/allocators.txt", "r") as f:
+        allocators = [x for x in f.read().split()]
+
+    
+    #check if packet_sizes exists
+    if not os.path.exists(out_dir + "/packet_sizes.txt"):
+        print("Error: packet_sizes file does not exist")
+        exit(1)
+    # Read packet_sizes from file as a float separated by space
+    with open(out_dir + "/packet_sizes.txt", "r") as f:
+        packet_sizes = [x for x in f.read().split()]
 
 
     flits_latency_list = {} #'injected_rate': injected_rate
@@ -92,188 +120,195 @@ def main():
 
         # move to output directory
         os.chdir(t)
+        for a in allocators:
+            for n in num_vcs:
+                for p in packet_sizes:
+                    sim_file_plot = n +"_" + a + "_" + "_"+ p
+                    for routing in routings:
+                        # check if csv files exist
 
-        for routing in routings:
-            # check if csv files exist
-            if not os.path.exists(routing + "_" +sim_out):
-                print("Error: sim_out.csv does not exist")
-                exit(1)
+                        sim_file= n +"_" + a + "_" + routing  + "_"+ p
 
-            if not os.path.exists(routing + "_" +cycles):
-                print("Error: cycles.csv does not exist")
-                exit(1)
-            if not os.path.exists(routing + "_" +run_time):
-                print("Error: run_time.csv does not exist")
-                exit(1)
+                        if not os.path.exists(sim_file + "_" + sim_out):
+                            print("Error: sim_out.csv does not exist")
+                            exit(1)
+
+                        if not os.path.exists(sim_file + "_" + cycles):
+                            print("Error: cycles.csv does not exist")
+                            exit(1)
+
+                        if not os.path.exists(sim_file + "_" + run_time):
+                            print("Error: run_time.csv does not exist")
+                            exit(1)
 
 
-            # create plots directory
-            print("Creating plots directory...")
-            if not os.path.exists('plots'):
-                os.makedirs('plots')
+                        # create plots directory
+                        print("Creating plots directory...")
+                        if not os.path.exists('plots'):
+                            os.makedirs('plots')
 
-            df_sim = pd.read_csv(routing + "_" +sim_out, sep=',', header=None)
-            flits_latency = df_sim[P_LAT] #F_LAT
-            accepted_flits = df_sim[F_ACC]
-            traffic_pattern = df_sim[1][0]
-            hops_avg = df_sim[H_AVG]
-            worst_flits_latency = df_sim[P_W_LAT] #F_LAT
-            worst_accepted_flits = df_sim[F_W_ACC]
+                        df_sim = pd.read_csv(sim_file + "_" +sim_out, sep=',', header=None)
+                        flits_latency = df_sim[P_LAT] #F_LAT
+                        accepted_flits = df_sim[F_ACC]
+                        traffic_pattern = df_sim[1][0]
+                        hops_avg = df_sim[H_AVG]
+                        worst_flits_latency = df_sim[P_W_LAT] #F_LAT
+                        worst_accepted_flits = df_sim[F_W_ACC]
 
-            flits_latency_list[routing] = flits_latency
-            accepted_flits_list[routing] = accepted_flits
-            traffic_pattern_list[routing] = traffic_pattern
-            hops_avg_list[routing] = hops_avg
-            worst_flits_latency_list[routing] = worst_flits_latency
-            worst_accepted_flits_list[routing] = worst_accepted_flits
+                        flits_latency_list[routing] = flits_latency
+                        accepted_flits_list[routing] = accepted_flits
+                        traffic_pattern_list[routing] = traffic_pattern
+                        hops_avg_list[routing] = hops_avg
+                        worst_flits_latency_list[routing] = worst_flits_latency
+                        worst_accepted_flits_list[routing] = worst_accepted_flits
 
-        #markers matploblib
-        markers = ['v', '^', '*', '<', '>',  '*', 'p', '*', '*', '*', '*', '*']
+                    #markers matploblib
+                    markers = ['v', '^', '*', '<', '>',  '*', 'p', '*', '*', '*', '*', '*']
 
-        #assign a marker per routing
-        data = pd.DataFrame(flits_latency_list)
-        data.plot(y=routings, legend=True, title='Flits latency')
+                    #assign a marker per routing
+                    data = pd.DataFrame(flits_latency_list)
+                    data.plot(y=routings, legend=True, title='Flits latency')
 
-        ax = data.plot(kind='line')
-        for i, line in enumerate(ax.get_lines()):
-            if line.get_label() == 'injected_rate':
-                print("pasando")
-                continue
-            line.set_marker(markers[i])
-            line.set_xdata(injected_rate)
-            #marker also the legend
+                    ax = data.plot(kind='line')
+                    for i, line in enumerate(ax.get_lines()):
+                        if line.get_label() == 'injected_rate':
+                            print("pasando")
+                            continue
+                        line.set_marker(markers[i])
+                        line.set_xdata(injected_rate)
+                        #marker also the legend
 
-        ax.legend(loc='upper left')
-        
+                    ax.legend(loc='upper left')
+                    
 
-        plt.ylabel('Latency (cycles)')
-        plt.xlabel('Injected rate (Flits/cycle/node)')
-        plt.title('Flits latency (cycles) [TP={}]'.format(traffic_pattern))
-        #show only x range between 0 and 1
-        plt.xlim(0, 1.1)
-        plt.grid()
-        plt.savefig('./plots/'+topology+'_flits_latency_'+t+'.png')
-        print("Flits latency plot created")
+                    plt.ylabel('Latency (cycles)')
+                    plt.xlabel('Injected rate (Flits/cycle/node)')
+                    plt.title('Flits latency (cycles) [TP={}]'.format(traffic_pattern))
+                    #show only x range between 0 and 1
+                    plt.xlim(0, 1.1)
+                    plt.grid()
+                    plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_flits_latency_'+t+'.png')
+                    print("Flits latency plot created")
 
-        #PLOT 2
+                    #PLOT 2
 
-        data = pd.DataFrame(worst_flits_latency_list)
-        data.plot( y=routings, legend=True, title='Worst flits latency')
-        plt.ylabel('Latency (cycles)')
-        plt.xlabel('Injected rate (Flits/cycle/node)')
-        plt.title('Flits latency (cycles) [TP={}]'.format(traffic_pattern))
-        #plt.xticks(np.arange(0, 1.1, 0.1))
-        
-        ax = data.plot(kind='line')
-        for i, line in enumerate(ax.get_lines()):
-            if line.get_label() == 'injected_rate':
-                print("pasando")
-                continue
-            line.set_marker(markers[i])
-            line.set_xdata(injected_rate)
-            #marker also the legend
+                    data = pd.DataFrame(worst_flits_latency_list)
+                    data.plot( y=routings, legend=True, title='Worst flits latency')
+                    plt.ylabel('Latency (cycles)')
+                    plt.xlabel('Injected rate (Flits/cycle/node)')
+                    plt.title('Flits latency (cycles) [TP={}]'.format(traffic_pattern))
+                    #plt.xticks(np.arange(0, 1.1, 0.1))
+                    
+                    ax = data.plot(kind='line')
+                    for i, line in enumerate(ax.get_lines()):
+                        if line.get_label() == 'injected_rate':
+                            print("pasando")
+                            continue
+                        line.set_marker(markers[i])
+                        line.set_xdata(injected_rate)
+                        #marker also the legend
 
-        ax.legend(loc='upper left')
+                    ax.legend(loc='upper left')
 
-       
-        plt.ylabel('Latency (cycles)')
-        plt.xlabel('Injected rate (Flits/cycle/node)')
-        plt.title('Flits latency (cycles) [TP={}]'.format(traffic_pattern))
-        #show only x range between 0 and 1
-        plt.xlim(0, 1.1)
-        plt.grid()
-        plt.savefig('./plots/'+topology+'_worst_flits_latency_'+t+'.png')
-        print("Flits latency plot created")
+                
+                    plt.ylabel('Latency (cycles)')
+                    plt.xlabel('Injected rate (Flits/cycle/node)')
+                    plt.title('Flits latency (cycles) [TP={}]'.format(traffic_pattern))
+                    #show only x range between 0 and 1
+                    plt.xlim(0, 1.1)
+                    plt.grid()
+                    plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_worst_flits_latency_'+t+'.png')
+                    print("Flits latency plot created")
 
-         #PLOT 3
-        data = pd.DataFrame(accepted_flits_list)
-        data.plot(y=routings, legend=True, title='Throughput')
+                    #PLOT 3
+                    data = pd.DataFrame(accepted_flits_list)
+                    data.plot(y=routings, legend=True, title='Throughput')
 
-        ax = data.plot(kind='line')
-        for i, line in enumerate(ax.get_lines()):
-            if line.get_label() == 'injected_rate':
-                print("pasando")
-                continue
-            line.set_marker(markers[i])
-            line.set_xdata(injected_rate)
-            #marker also the legend
+                    ax = data.plot(kind='line')
+                    for i, line in enumerate(ax.get_lines()):
+                        if line.get_label() == 'injected_rate':
+                            print("pasando")
+                            continue
+                        line.set_marker(markers[i])
+                        line.set_xdata(injected_rate)
+                        #marker also the legend
 
-        ax.legend(loc='upper left')
+                    ax.legend(loc='upper left')
 
-        #show only x range between 0 and 1.1
-        plt.xlim(0, 1.1)
-        plt.ylim(0, 1.1)
-        #show grid 0.1
-        plt.grid(True, which='both', alpha=0.1)
-        plt.ylabel('Accepted flits')
-        plt.xlabel('Injected Rate (Flits/cycle/node)')
-        plt.title('Throughput [TP={}]'.format(traffic_pattern))
-        
-        #plt.grid()
-        #plt.show()
-        plt.savefig('./plots/'+topology+'_throughput_'+t+'.png')
-        print("Throughput plot created")
+                    #show only x range between 0 and 1.1
+                    plt.xlim(0, 1.1)
+                    plt.ylim(0, 1.1)
+                    #show grid 0.1
+                    plt.grid(True, which='both', alpha=0.1)
+                    plt.ylabel('Accepted flits')
+                    plt.xlabel('Injected Rate (Flits/cycle/node)')
+                    plt.title('Throughput [TP={}]'.format(traffic_pattern))
+                    
+                    #plt.grid()
+                    #plt.show()
+                    plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_throughput_'+t+'.png')
+                    print("Throughput plot created")
 
-         #PLOT 4
-        data = pd.DataFrame(worst_accepted_flits_list)
-        data.plot(y=routings, legend=True, title='Worst throughput')
-        
-        ax = data.plot(kind='line')
-        for i, line in enumerate(ax.get_lines()):
-            if line.get_label() == 'injected_rate':
-                print("pasando")
-                continue
-            line.set_marker(markers[i])
-            line.set_xdata(injected_rate)
-            #marker also the legend
+                    #PLOT 4
+                    data = pd.DataFrame(worst_accepted_flits_list)
+                    data.plot(y=routings, legend=True, title='Worst throughput')
+                    
+                    ax = data.plot(kind='line')
+                    for i, line in enumerate(ax.get_lines()):
+                        if line.get_label() == 'injected_rate':
+                            print("pasando")
+                            continue
+                        line.set_marker(markers[i])
+                        line.set_xdata(injected_rate)
+                        #marker also the legend
 
-        ax.legend(loc='upper left')
+                    ax.legend(loc='upper left')
 
-        #show only x range between 0 and 1.1
-        plt.xlim(0, 1.1)
-        plt.ylim(0, 1.1)
+                    #show only x range between 0 and 1.1
+                    plt.xlim(0, 1.1)
+                    plt.ylim(0, 1.1)
 
-        #show grid 0.1 separation between lines in the grid
-        
-        plt.grid(True, which='both', alpha=0.1)
+                    #show grid 0.1 separation between lines in the grid
+                    
+                    plt.grid(True, which='both', alpha=0.1)
 
-        plt.ylabel('Accepted flits')
-        plt.xlabel('Injected Rate (Flits/cycle/node)')
-        plt.title('Throughput [TP={}]'.format(traffic_pattern))
+                    plt.ylabel('Accepted flits')
+                    plt.xlabel('Injected Rate (Flits/cycle/node)')
+                    plt.title('Throughput [TP={}]'.format(traffic_pattern))
 
-        #plt.grid()
-        #plt.show()
-        plt.savefig('./plots/'+topology+'_worst_throughput_'+t+'.png')
-        print("Throughput plot created")
+                    #plt.grid()
+                    #plt.show()
+                    plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_worst_throughput_'+t+'.png')
+                    print("Throughput plot created")
 
-        #PLOT 5
-        data = pd.DataFrame(hops_avg_list)
-        data.plot(y=routings, legend=True, title='Hops average')
+                    #PLOT 5
+                    data = pd.DataFrame(hops_avg_list)
+                    data.plot(y=routings, legend=True, title='Hops average')
 
-        ax = data.plot(kind='line')
-        for i, line in enumerate(ax.get_lines()):
-            if line.get_label() == 'injected_rate':
-                print("pasando")
-                continue
-            line.set_marker(markers[i])
-            line.set_xdata(injected_rate)
-            #marker also the legend
+                    ax = data.plot(kind='line')
+                    for i, line in enumerate(ax.get_lines()):
+                        if line.get_label() == 'injected_rate':
+                            print("pasando")
+                            continue
+                        line.set_marker(markers[i])
+                        line.set_xdata(injected_rate)
+                        #marker also the legend
 
-        ax.legend(loc='upper left')
+                    ax.legend(loc='upper left')
 
-        #show only x range between 0 and 1.1
-        plt.xlim(0, 1.1)
-        plt.ylabel('Avg hops')
-        plt.xlabel('Injected Rate (Flits/cycle/node)')
-        plt.title('Hops [TP={}]'.format(traffic_pattern))
+                    #show only x range between 0 and 1.1
+                    plt.xlim(0, 1.1)
+                    plt.ylabel('Avg hops')
+                    plt.xlabel('Injected Rate (Flits/cycle/node)')
+                    plt.title('Hops [TP={}]'.format(traffic_pattern))
 
-        #show grid 0.1
-        plt.grid(True, which='both', alpha=0.1)
-        #plt.show()
-        plt.savefig('./plots/'+topology+'_hops_'+t+'.png')
-        print("Hops plot created")
+                    #show grid 0.1
+                    plt.grid(True, which='both', alpha=0.1)
+                    #plt.show()
+                    plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_hops_'+t+'.png')
+                    print("Hops plot created")
 
-        os.chdir("../") # volvemos atras
+                    os.chdir("../") # volvemos atras
 
 
 
