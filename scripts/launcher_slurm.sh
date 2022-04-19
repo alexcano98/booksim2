@@ -57,38 +57,44 @@ for traffic in `cat ${PARAMS}/traffics` #extremely bbuggy
 do
   if ! [ -d "${OUT_DIR}/${traffic}" ]; then
     mkdir -p ${OUT_DIR}/${traffic}
-    for inj_rate in `cat ${PARAMS}/injection_rates` #extremely bbuggy
+  fi
+  for inj_rate in `cat ${PARAMS}/injection_rates` #extremely bbuggy
+  do
+
+    for routing in `cat ${PARAMS}/routings` #extremely bbuggy
     do
 
-      for routing in `cat ${PARAMS}/routings` #extremely bbuggy
-      do
+      echo "#!/bin/bash " >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
+      echo "#SBATCH --job-name=booksim" >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
+      echo "#SBATCH --cpus-per-task=1" >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
+      echo "#SBATCH --ntasks=1" >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
+      echo "#SBATCH --time=UNLIMITED" >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
+      echo "#SBATCH -D ." >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
+      echo "#SBATCH --output=${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out" >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
+      echo "#SBATCH --error=${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.err" >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
 
-        echo "#!/bin/bash
-        #SBATCH --job-name=booksim
-        #SBATCH --cpus-per-task=1
-        #SBATCH --ntasks=1
-        #SBATCH --time=UNLIMITED" > ${traffic}_sim_${inj_rate}_${routing}.sbatch
+      # --output=/home/alejandro/booksim2/${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out
+      # --error=/home/alejandro/booksim2/${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.err
+      # --mem=5GB
 
-        # --output=/home/alejandro/booksim2/${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out
-        # --error=/home/alejandro/booksim2/${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.err
-        # --mem=5GB
+      #/usr/bin/time --verbose -o ./time_results/sim_${inj_rate}.time
+      # Create the sbatch body
+      echo " ${BOOKSIM_HOME}/booksim ${CONFIG_FILE} injection_rate=${inj_rate} traffic=${traffic} routing_function=${routing}" >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
 
-        #/usr/bin/time --verbose -o ./time_results/sim_${inj_rate}.time
-        # Create the sbatch body
-        echo " ${BOOKSIM_HOME}/booksim ${CONFIG_FILE} injection_rate=${inj_rate} traffic=${traffic} routing_function=${routing} > ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out " >> ${traffic}_sim_${inj_rate}_${routing}.sbatch
+      # > ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out 
 
-        # Submit the sbatch
-        echo "Submitting sbatch ${traffic}_sim_${inj_rate}_${routing}.sbatch"
-        sbatch ${traffic}_sim_${inj_rate}_${routing}.sbatch
+      # Submit the sbatch
+      echo "Submitting sbatch ${traffic}_sim_${inj_rate}_${routing}.sbatch"
+      sbatch ${traffic}_sim_${inj_rate}_${routing}.sbatch
 
-        # Archive the sbatch
-        mv ${traffic}_sim_${inj_rate}_${routing}.sbatch ./sbatch_archive/
+      # Archive the sbatch
+      mv ${traffic}_sim_${inj_rate}_${routing}.sbatch ./sbatch_archive/
 
-        #echo $inj_rate
-        #./src/booksim ${CONFIG_FILE} injection_rate="${inj_rate}" traffic="${traffic}" routing_function="${routing}" >> ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out
-        echo "Done: ${inj_rate}, ${routing}, ${traffic}"
+      #echo $inj_rate
+      #./src/booksim ${CONFIG_FILE} injection_rate="${inj_rate}" traffic="${traffic}" routing_function="${routing}" >> ${OUT_DIR}/${traffic}/sim_${inj_rate}_${routing}.out
+      echo "Done: ${inj_rate}, ${routing}, ${traffic}"
 
-      done
     done
-  fi
+  done
+  
 done

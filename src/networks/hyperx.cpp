@@ -76,7 +76,7 @@ void Hyperx::RegisterRoutingFunctions()
 
 	gRoutingFunctionMap["dor_hyperx"] = &dor_hyperx;
 	gRoutingFunctionMap["O1_turn_hyperx"] = &adaptive_xyyx_hyperx;
-	gRoutingFunctionMap["adaptive_dor_exit_hyperx"] = &adaptive_dor_exit_hyperx;
+	//gRoutingFunctionMap["adaptive_dor_exit_hyperx"] = &adaptive_dor_exit_hyperx; wrong manner to approach channel escape
 	gRoutingFunctionMap["adaptive_escape_hyperx"] = &adaptive_escape_hyperx;
 	gRoutingFunctionMap["valiant_hyperx"] = &valiant_hyperx;
 	gRoutingFunctionMap["adaptive_escalera_hyperx"] = &adaptive_escalera_hyperx;
@@ -457,14 +457,15 @@ void dor_hyperx(const Router *r, const Flit *f, int in_channel,
 	outputs->AddRange(out_port, vcBegin, vcEnd);
 }
 
-// FIXME: THIS IS WRONG FOR N>2!
+// ZYX or XYZ routing...
 void adaptive_xyyx_hyperx(const Router *r, const Flit *f, int in_channel,
 						  OutputSet *outputs, bool inject)
 {
 
-	assert(gN == 2);
+	assert(gNumVCs>=gN);
+	assert(gN != 1);
 	int vcBegin = 0, vcEnd = gNumVCs - 1;
-	int available_vcs = gNumVCs / gN;
+	int available_vcs = gNumVCs / 2;
 
 	int out_port = -1;
 
@@ -490,7 +491,7 @@ void adaptive_xyyx_hyperx(const Router *r, const Flit *f, int in_channel,
 		if (in_channel >= gN * (gK - 1))
 		{ // inyeccion
 
-			for (int i = 0; i < gN; i++)
+			for (int i = 0; i < gN; i+= (gN-1) )
 			{
 
 				int salida = (node_vectors[nodo_destino * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
@@ -511,27 +512,30 @@ void adaptive_xyyx_hyperx(const Router *r, const Flit *f, int in_channel,
 			}
 		}
 		else
-		{ // FIX THIS for n> 2
-
-			dimension_salida = f->vc / available_vcs;
-			/*for(int i = dimension_salida; i< gN; i++)*/
-
-			if (dimension_salida == 1)
-			{
-				// vcBegin += available_vcs;
-				out_port = calculateDORYX_routers(nodo_destino, nodo_actual);
-			}
-			else
-			{
-
-				out_port = calculateDOR_routers(nodo_destino, nodo_actual);
-				// vcEnd -= available_vcs;
-			}
+		{ 
+			dimension_salida = f->vc / available_vcs;	
 		}
 
-		vcBegin = dimension_salida * available_vcs;
-		vcEnd = dimension_salida * available_vcs + available_vcs - 1;
+		if (dimension_salida)
+		{
+			
+			out_port = calculateDORYX_routers(nodo_destino, nodo_actual);
 
+			vcEnd = available_vcs -1;
+
+		}
+		else
+		{
+			
+			out_port = calculateDOR_routers(nodo_destino, nodo_actual);
+			vcBegin = available_vcs;
+
+		}
+
+		
+
+		//printf("actual %d, destino %d, outport %d \n", nodo_actual, nodo_destino, out_port);
+		//fflush(stdout);
 		assert(out_port != -1); // no deberia ser...
 
 		// printf("entry: %d, start: %d, end: %d \n", f->vc, vcBegin, vcEnd);
@@ -549,6 +553,8 @@ void adaptive_escalera_hyperx(const Router *r, const Flit *f, int in_channel,
 	int vcBegin = 0, vcEnd = gNumVCs - 1;
 
 	int out_port = -1;
+	
+	assert(gNumVCs>=gN);
 
 	int nodo_actual = r->GetID();
 	int nodo_destino = calculateRouter(f->dest);
@@ -568,7 +574,7 @@ void adaptive_escalera_hyperx(const Router *r, const Flit *f, int in_channel,
 
 		int dimension_salida = -1;
 		int min_occupancy = INT_MAX;
-		vector<int> creditos = r->FreeCredits();
+		int available_vcs = gNumVCs / gN;
 
 		for (int i = 0; i < gN; i++)
 		{
@@ -596,11 +602,14 @@ void adaptive_escalera_hyperx(const Router *r, const Flit *f, int in_channel,
 
 		if (in_channel >= gN * (gK - 1))
 		{ // inyeccion
-			vcEnd -= gNumVCs / 2;
+			vcBegin = 0;
+			vcEnd = available_vcs;
 		}
 		else
 		{
-			vcBegin += gNumVCs / 2;
+			int d = f->vc / available_vcs;
+			vcBegin = d*available_vcs + available_vcs;
+			vcEnd = vcBegin + available_vcs -1;
 		}
 
 		// printf("entry: %d, start: %d, end: %d \n", f->vc, vcBegin, vcEnd);
