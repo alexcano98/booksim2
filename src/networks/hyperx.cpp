@@ -1037,6 +1037,8 @@ void ugal_hyperx(const Router *r, const Flit *f, int in_channel,
 	outputs->AddRange(out_port, vcBegin, vcEnd);
 }
 
+
+
 void omni_war_hyperx(const Router *r, const Flit *f, int in_channel,
 					 OutputSet *outputs, bool inject)
 {
@@ -1270,17 +1272,6 @@ void omni_war_priority_hyperx(const Router *r, const Flit *f, int in_channel,
 							}												 
 						}
 					}
-
-					
-					// printf del numero saltos, canales virtuales y puerto de salida
-					// printf("%d %d %d\n", missroute, available_vcs, puerto_miss);
-
-					/*for(int k_puerto = 0; k_puerto < (gK -2); i++){
-						int puerto_miss = i *(gK-1) + k_puerto;
-						if( puerto_miss != prohibido && puerto_miss != puerto ){ //es 1 hop mas....
-							outputs->AddRange( puerto_miss , vcBegin, vcEnd, 0 );
-						}
-					}*/
 				}
 			}
 		}
@@ -1418,15 +1409,20 @@ void dal_hyperx(const Router *r, const Flit *f, int in_channel,
 		}
 		else
 		{
-			out_port = calculateDOR_routers(targetr, r->GetID());
-			outputs->AddRange(out_port, vcBegin, vcBegin, 0);
+			int avaliable_vcs = (vcEnd - vcBegin + 1)/2;
+			int nodo_destino = targetr;
+			int nodo_actual = r->GetID();
 
-			if (f->vc != vcBegin)
+			int distance_to_dest = find_distance_hyperx(f->dest, nodo_actual * gC); 
+			out_port = calculateDOR_routers(targetr, r->GetID());
+
+			int prio_dor = buff_size - r->GetUsedCredit(out_port); // con menos prioridad para que se coja menos...
+			outputs->AddRange(out_port, vcBegin, vcBegin+ avaliable_vcs -1, prio_dor);
+
+			if (f->vc >= avaliable_vcs)
 			{ // adaptativo
 
-				int nodo_destino = targetr;
-				int nodo_actual = r->GetID();
-
+			
 				for (int i = 0; i < gN; i++)
 				{
 
@@ -1436,20 +1432,23 @@ void dal_hyperx(const Router *r, const Flit *f, int in_channel,
 					{ // Si hay que recorrer esta salida...
 
 						int puerto_min = i * (gK - 1) + salida - 1;
-						outputs->AddRange(puerto_min, vcBegin + 1, vcEnd, 1); // minimo
+						
+						int prio = (buff_size - r->GetUsedCredit(puerto_min)) * (gN - distance_to_dest + 1); //+1 es por ser minimo, un salto menos...
+						outputs->AddRange(puerto_min, avaliable_vcs, vcEnd, prio); // minimo
 
 						for (int k_salida = 0; k_salida < (gK - 2); k_salida++)
 						{
 							if (k_salida != salida - 1)
 							{
 
-								int puerto = i * (gK - 1) + k_salida; // salida - 1
+								int puerto_miss = i * (gK - 1) + k_salida; // salida - 1
 								int nodo_fuente = f->src / gC;
 								int condicion = (node_vectors[nodo_fuente * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
 
-								if (condicion == 0 && r->GetUsedCredit(puerto_min) * i > r->GetUsedCredit(puerto) * (i + 1))
+								if (condicion == 0 && r->GetUsedCredit(puerto_min) * i > r->GetUsedCredit(puerto_miss) * (i + 1))
 								{
-									outputs->AddRange(puerto, vcBegin + 1, vcEnd, 2); // miss
+									int prio_miss = (buff_size - r->GetUsedCredit(puerto_miss)) * (gN - distance_to_dest);
+									outputs->AddRange(puerto_miss, avaliable_vcs, vcEnd, prio_miss); // miss
 								}													  // no se ha desviado aun en esta dimension
 							}
 						}
