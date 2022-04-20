@@ -486,30 +486,23 @@ void adaptive_xyyx_hyperx(const Router *r, const Flit *f, int in_channel,
 	{
 
 		int dimension_salida = -1;
-		int min_occupancy = INT_MAX;
 
-		if (in_channel >= gN * (gK - 1))
-		{ // inyeccion
+		if (in_channel >= gN * (gK - 1)) // inyeccion
+		{ 
 
-			for (int i = 0; i < gN; i+= (gN-1) )
-			{
+			int out_xy = calculateDOR_routers(nodo_destino, nodo_actual);
+			int out_yx = calculateDORYX_routers(nodo_destino, nodo_actual);
 
-				int salida = (node_vectors[nodo_destino * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
+			if(r->GetUsedCredit(out_xy) <= r->GetUsedCredit(out_yx) ){
 
-				if (salida != 0)
-				{ // Si hay que recorrer esta salida...
-
-					int puerto = i * (gK - 1) + salida - 1;
-					int occupancy = r->GetUsedCredit(puerto);
-
-					if (occupancy < min_occupancy)
-					{
-						min_occupancy = occupancy;
-						dimension_salida = i;
-						out_port = puerto; // esto es lo normalizado.
-					}
-				}
+				dimension_salida = 0;
+			
+			}else{
+				
+				dimension_salida = 1;
+			
 			}
+			
 		}
 		else
 		{ 
@@ -520,7 +513,6 @@ void adaptive_xyyx_hyperx(const Router *r, const Flit *f, int in_channel,
 		{
 			
 			out_port = calculateDORYX_routers(nodo_destino, nodo_actual);
-
 			vcEnd = available_vcs -1;
 
 		}
@@ -533,12 +525,8 @@ void adaptive_xyyx_hyperx(const Router *r, const Flit *f, int in_channel,
 		}
 
 		
-
-		//printf("actual %d, destino %d, outport %d \n", nodo_actual, nodo_destino, out_port);
-		//fflush(stdout);
 		assert(out_port != -1); // no deberia ser...
 
-		// printf("entry: %d, start: %d, end: %d \n", f->vc, vcBegin, vcEnd);
 	}
 
 	outputs->Clear();

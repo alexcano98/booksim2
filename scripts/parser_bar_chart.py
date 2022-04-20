@@ -151,32 +151,55 @@ def main():
                         
                         accepted_flits = df_sim[F_ACC]
                         hops_avg = df_sim[H_AVG]
+                        traffic_pattern = df_sim[1][0]
                         worst_accepted_flits = df_sim[F_W_ACC]
 
 
-                        accepted_flits_list[routing] = accepted_flits
+                        accepted_flits_list[routing] = round(100 * accepted_flits.mean())
+                        #print("Accepted flits: ", accepted_flits.mean())
                         traffic_pattern_list[routing] = traffic_pattern
-                        hops_avg_list[routing] = hops_avg
+                        hops_avg_list[routing] = float(hops_avg)
                         worst_accepted_flits_list[routing] = worst_accepted_flits
 
 
                     #Throughput
-                    data = pd.DataFrame(accepted_flits_list)
+                    #print(accepted_flits_list)
+                    d = {"routings": list(accepted_flits_list.keys()), "accepted_flits": list(accepted_flits_list.values())}
+
+                    data = pd.DataFrame(data=d) 
                     
-                    data.plot(y=routings, legend=True, title='Throughput')
-                    ax = data.plot(kind='bar', legend=True, title='Throughput')
-                    ax.bar(routings, accepted_flits_list.values(), align='center', alpha=0.5)
+                    ax =  data.plot.bar(y="accepted_flits", x="routings", legend=False, title='Throughput')
                     ax.set_xlabel('Routing Functions')
                     ax.set_ylabel('Accepted Flits')
                     ax.set_title('Accepted Flits')
-                    ax.set_xticklabels(routings)
-                    ax.set_xticks(routings)
-                    ax.set_xticklabels(routings, rotation=45)
+                    ax.set_xticklabels(routings, rotation=30)
+                    #show numbers on bars
+                    for p in ax.patches:
+                        ax.annotate(str(p.get_height()), (p.get_x() * 1.005, p.get_height() * 1.005))
+                    #show the grid
+                    ax.grid(True)
                     plt.title('Throughput [TP={}]'.format(traffic_pattern))
                     
 
                     plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_throughput_'+t+'.png')
                     print("Throughput plot created")
+
+                    #HOPS
+                    d = {"routings": list(hops_avg_list.keys()), "hops_avg": list(hops_avg_list.values())}
+                    data = pd.DataFrame(data=d)
+                    ax =  data.plot.bar(y="hops_avg", x="routings", legend=False, title='Hops')
+                    ax.set_xlabel('Routing Functions')
+                    ax.set_ylabel('Hops')
+                    ax.set_title('Hops')
+                    ax.set_xticklabels(routings, rotation=30)
+                    #show numbers on bars
+                    for p in ax.patches:
+                        ax.annotate(str(p.get_height()), (p.get_x() * 1.005, p.get_height() * 1.005))
+                    #show the grid
+                    ax.grid(True)
+                    plt.title('Hops [TP={}]'.format(traffic_pattern))
+                    plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_hops_'+t+'.png')
+                    print("Hops plot created")
 
                     """
                     #PLOT 4

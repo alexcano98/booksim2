@@ -186,9 +186,8 @@ else: #add the new packet sizes to the file
                 if str(i) not in fr.read():
                     f.write(str(i) + " ")
 
-#save the json file inside the topology directory
-with open(topology_dir + "/config.json", "w") as f:
-    json.dump(data, f)
+#copy the json file to the topology directory
+shutil.copy(json_file, topology_dir)
     
 
 #for each traffic, for each topology, for each injection rate, for each routing function, launch the job
