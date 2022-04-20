@@ -506,21 +506,23 @@ void adaptive_xyyx_hyperx(const Router *r, const Flit *f, int in_channel,
 		}
 		else
 		{ 
-			dimension_salida = f->vc / available_vcs;	
+			dimension_salida = f->vc / available_vcs;
+			//printf("dimension_salida: %d \n", dimension_salida);
 		}
 
-		if (dimension_salida)
+		if (dimension_salida == 1)
 		{
 			
 			out_port = calculateDORYX_routers(nodo_destino, nodo_actual);
-			vcEnd = available_vcs -1;
+			vcBegin = available_vcs;
 
 		}
 		else
 		{
 			
 			out_port = calculateDOR_routers(nodo_destino, nodo_actual);
-			vcBegin = available_vcs;
+			vcEnd = available_vcs -1;
+
 
 		}
 
