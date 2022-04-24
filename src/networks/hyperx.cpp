@@ -76,7 +76,7 @@ void Hyperx::RegisterRoutingFunctions()
 
 	gRoutingFunctionMap["dor_hyperx"] = &dor_hyperx;
 	gRoutingFunctionMap["O1_turn_hyperx"] = &adaptive_xyyx_hyperx;
-	//gRoutingFunctionMap["adaptive_dor_exit_hyperx"] = &adaptive_dor_exit_hyperx; wrong manner to approach channel escape
+	gRoutingFunctionMap["adaptive_dor_exit_hyperx"] = &adaptive_dor_exit_hyperx; //wrong manner to approach channel escape
 	gRoutingFunctionMap["adaptive_escape_hyperx"] = &adaptive_escape_hyperx;
 	gRoutingFunctionMap["valiant_hyperx"] = &valiant_hyperx;
 	gRoutingFunctionMap["adaptive_escalera_hyperx"] = &adaptive_escalera_hyperx;
@@ -463,7 +463,6 @@ void adaptive_xyyx_hyperx(const Router *r, const Flit *f, int in_channel,
 {
 
 	assert(gNumVCs>=gN);
-	assert(gN != 1);
 	int vcBegin = 0, vcEnd = gNumVCs - 1;
 	int available_vcs = gNumVCs / 2;
 
@@ -593,16 +592,14 @@ void adaptive_escalera_hyperx(const Router *r, const Flit *f, int in_channel,
 		if (in_channel >= gN * (gK - 1))
 		{ // inyeccion
 			vcBegin = 0;
-			vcEnd = available_vcs;
+			vcEnd = available_vcs-1;
 		}
 		else
 		{
 			int d = f->vc / available_vcs;
-			vcBegin = d*available_vcs + available_vcs;
+			vcBegin = d*available_vcs;
 			vcEnd = vcBegin + available_vcs -1;
 		}
-
-		// printf("entry: %d, start: %d, end: %d \n", f->vc, vcBegin, vcEnd);
 	}
 
 	outputs->Clear();

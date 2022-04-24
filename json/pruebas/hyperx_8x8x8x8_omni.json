@@ -7,5 +7,6 @@
     "config_file" : "runfiles/hyperx/hyperx_topology_2vcs_8x8x8x8",
     "num_vcs" : [6],
     "allocator" : "wavefront",
-    "string" : " vc_prioritize_empty=1 "
+    "string" : " vc_prioritize_empty=1 " //esta mal!!!!!
+    asd
 }

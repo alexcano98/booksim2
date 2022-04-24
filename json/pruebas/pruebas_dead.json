@@ -1,0 +1,13 @@
+{
+    "topology" : "hyperx_8x8x8x8_prueba_nic_mac",
+    "injection_rate" : [0.2, 0.4, 0.6, 0.8, 1.0],
+    "traffic": ["uniform", "swap2", "complement_reverse_3d_hyperx"],
+    "routing_function" :["omni_war_priority", "omni_war", "dal", "valiant", "dor", "ugal"],
+    "results_dir" : "prueba",
+    "config_file" : "runfiles/hyperx/hyperx_topology_2vcs_8x8x8x8",
+    "num_vcs" : [8],
+    "allocator" : ["select"],
+    "packet_size" : [1],
+    "string" : " alloc_iters=4 vc_busy_when_full=1"  
+    
+}

@@ -1,0 +1,12 @@
+{
+    "topology" : "hyperx_8x8x8x8_pruebas_output_buffer_tail_flit",
+    "injection_rate" : [1.0],
+    "traffic": ["uniform", "complement_reverse_3d_hyperx", "tornado_alex_ndim", "swap_and_complement_3d_hyperx"],
+    "routing_function" :["dal", "adaptive_escape"],
+    "results_dir" : "prueba",
+    "config_file" : "runfiles/hyperx/hyperx_topology_2vcs_8x8x8x8",
+    "num_vcs" : [2,4],
+    "allocator" : ["select"],
+    "packet_size" : [15],
+    "string" : " alloc_iters=4 vc_busy_when_full=1 vc_prioritize_empty=1 output_buffer_size=24 wait_for_tail_credit=1"
+}

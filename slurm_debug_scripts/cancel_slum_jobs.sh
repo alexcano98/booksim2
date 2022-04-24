@@ -17,6 +17,18 @@ else
     job_name="$1"
 fi
 
+#ask the user if he really wanna cancel the jobs with the name $job_name
+echo "Are you sure you wanna cancel the jobs with the name $job_name? (y/n)"
+read answer
+
+# if the user answers "y" or "Y" then cancel the jobs
+if [ "$answer" != "y" ] || [ "$answer" != "Y" ]
+then
+    # if the user answers "n" or "N" then exit the script
+    echo "Exiting the script"
+    exit 1
+fi
+
 job_ids=$(squeue -o "%i %j" -h -u $user)
 
 #get the first column of all the lines with the name $job_name

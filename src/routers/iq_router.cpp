@@ -58,9 +58,9 @@ IQRouter::IQRouter(Configuration const &config, Module *parent,
 	_vc_shuffle_requests = (config.GetInt("vc_shuffle_requests") > 0); 
 
 	_speculative = (config.GetInt("speculative") > 0);
-	_spec_check_elig = (config.GetInt("spec_check_elig") > 0);
-	_spec_check_cred = (config.GetInt("spec_check_cred") > 0);
-	_spec_mask_by_reqs = (config.GetInt("spec_mask_by_reqs") > 0);
+	_spec_check_elig = (config.GetInt("spec_check_elig") > 0); //means that the router will check the eligiblity of the flit to be sent to the next vc
+	_spec_check_cred = (config.GetInt("spec_check_cred") > 0); //means that the router will check the credit of the vc before sending the flit
+	_spec_mask_by_reqs = (config.GetInt("spec_mask_by_reqs") > 0); //means that the router will mask the vc based on the number of requests
 
 	_routing_delay = config.GetInt("routing_delay"); //the time it takes to route a flit in cycles
 	_vc_alloc_delay = config.GetInt("vc_alloc_delay");
@@ -1300,8 +1300,10 @@ void IQRouter::_SWHoldUpdate()
 
 			dest_buf->SendingFlit(f);
 
+			
 			_crossbar_flits.push_back(make_pair(-1, make_pair(f, make_pair(expanded_input, expanded_output))));
 
+			//sending credits back ????
 			if (_out_queue_credits.count(input) == 0)
 			{
 				_out_queue_credits.insert(make_pair(input, Credit::New()));
@@ -1465,6 +1467,7 @@ bool IQRouter::_SWAllocAddReq(int input, int vc, int output)
 
 		if (allocator->ReadRequest(req, expanded_input, expanded_output))
 		{
+			//Supersedes is a hack to get around the fact that the allocator does not have a notion of priority
 			if (RoundRobinArbiter::Supersedes(vc, prio, req.label, req.in_pri,
 											  _sw_rr_offset[expanded_input], _vcs))
 			{
@@ -1544,7 +1547,7 @@ void IQRouter::_SWAllocEvaluate()
 		int const time = iter->first;
 		if (time >= 0)
 		{
-			break;
+			break; 
 		}
 
 		int const input = iter->second.first.first;
@@ -1699,6 +1702,8 @@ void IQRouter::_SWAllocEvaluate()
 		}
 	}
 
+	//================== end of speculative and allocation related actions =================
+
 	if (watched)
 	{
 		*gWatchOut << GetSimTime() << " | " << _sw_allocator->FullName() << " | ";
@@ -1710,7 +1715,7 @@ void IQRouter::_SWAllocEvaluate()
 		}
 	}
 
-	_sw_allocator->Allocate(); //Allocate the flits...
+	_sw_allocator->Allocate(); //ALLOCATE THE FLITS
 	
 	if (_spec_sw_allocator)
 		_spec_sw_allocator->Allocate();
@@ -1779,7 +1784,7 @@ void IQRouter::_SWAllocEvaluate()
 							   << "." << (vc % _input_speedup)
 							   << "." << endl;
 				}
-				_sw_rr_offset[expanded_input] = (vc + _input_speedup) % _vcs;
+				_sw_rr_offset[expanded_input] = (vc + _input_speedup) % _vcs; //AQUI TE LO DAN
 				iter->second.second = expanded_output;
 			}
 			else
@@ -1890,6 +1895,8 @@ void IQRouter::_SWAllocEvaluate()
 			iter->second.second = STALL_CROSSBAR_CONFLICT;
 		}
 	}
+
+	//END OF ASSIGNMENT OF VCS TO FLITS....
 
 	if (!_speculative && (_sw_alloc_delay <= 1))
 	{
@@ -2281,6 +2288,8 @@ void IQRouter::_SWAllocUpdate()
 
 				match_vc = cur_buf->GetOutputVC(vc);
 			}
+
+
 			assert((match_vc >= 0) && (match_vc < _vcs));
 
 			if (f->watch)
@@ -2309,7 +2318,7 @@ void IQRouter::_SWAllocUpdate()
 			if (!_routing_delay && f->head)
 			{
 				const FlitChannel *channel = _output_channels[output];
-				const Router *router = channel->GetSink();
+				const Router *router = channel->GetSink(); 
 				if (router)
 				{
 					if (_noq)
@@ -2436,11 +2445,11 @@ void IQRouter::_SWAllocUpdate()
 					else
 					{
 						_sw_alloc_vcs.push_back(make_pair(-1, make_pair(item.second.first,
-																		-1)));
+																		-1))); //add the next flit to the sw_alloc_vcs list ??
 					}
 				}
 			}
-		}
+		} //FIN EXPANDED OUTPUTT
 		else
 		{
 			if (f->watch)
