@@ -117,27 +117,34 @@ def main():
 
     os.chdir(out_dir)
     for t in traffics:
-
         # move to output directory
         os.chdir(t)
         for a in allocators:
             for n in num_vcs:
                 for p in packet_sizes:
                     sim_file_plot = n +"_" + a + "_" + "_"+ p
+                    error = 0
                     for routing in routings:
                         # check if csv files exist
 
                         sim_file= n +"_" + a + "_" + routing  + "_"+ p
 
+                        
                         if not os.path.exists(sim_file + "_" + sim_out):
+                            print("sim_file: \n", sim_file)
+                            print("current directory: \n", os.getcwd())
                             print("Error: sim_out.csv does not exist")
                             exit(1)
 
                         if not os.path.exists(sim_file + "_" + cycles):
+                            print("sim_file: \n", sim_file)
+                            print("current directory: \n", os.getcwd())
                             print("Error: cycles.csv does not exist")
                             exit(1)
 
                         if not os.path.exists(sim_file + "_" + run_time):
+                            print("sim_file: \n", sim_file)
+                            print("current directory: \n", os.getcwd())
                             print("Error: run_time.csv does not exist")
                             exit(1)
 
@@ -147,8 +154,19 @@ def main():
                         if not os.path.exists('plots'):
                             os.makedirs('plots')
 
-                        df_sim = pd.read_csv(sim_file + "_" +sim_out, sep=',', header=None)
-                        
+                        #catch any exception and throw it again
+                        try:
+                            df_sim = pd.read_csv(sim_file + "_" +sim_out, sep=',', header=None)
+                        except Exception as e:
+                            print("==============================ERROR===============================")
+                            #Show filename and current directory
+                            print("sim_file: \n", sim_file)
+                            print("current directory: \n", os.getcwd())
+
+                            #Show exception
+                            print("Exception: \n", e)
+                            break
+
                         accepted_flits = df_sim[F_ACC]
                         hops_avg = df_sim[H_AVG]
                         traffic_pattern = df_sim[1][0]
@@ -161,7 +179,8 @@ def main():
                         hops_avg_list[routing] = float(hops_avg)
                         worst_accepted_flits_list[routing] = worst_accepted_flits
 
-
+                    if error == 1:
+                        continue
                     #Throughput
                     #print(accepted_flits_list)
                     d = {"routings": list(accepted_flits_list.keys()), "accepted_flits": list(accepted_flits_list.values())}
@@ -261,7 +280,7 @@ def main():
                     plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_hops_'+t+'.png')
                     print("Hops plot created") """
 
-                    os.chdir("../") # volvemos atras 
+        os.chdir("../") # volvemos atras 
 
 
 

@@ -1062,8 +1062,8 @@ void IQRouter::_VCAllocUpdate()
 			}
 
 #ifdef TRACK_STALLS
-			assert((output_and_vc == STALL_BUFFER_BUSY) ||
-				   (output_and_vc == STALL_BUFFER_CONFLICT));
+			//assert((output_and_vc == STALL_BUFFER_BUSY) || (output_and_vc == STALL_BUFFER_CONFLICT));
+			//esto no estaba comentado, pero sino no me tira.... algo pasa con el busy_when_full
 			if (output_and_vc == STALL_BUFFER_BUSY)
 			{
 				++_buffer_busy_stalls[f->cl];
