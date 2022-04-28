@@ -82,6 +82,16 @@ if len(sys.argv) == 3 and sys.argv[2] == "1":
     shutil.rmtree(topology_dir)
 
 
+#if the topology directory exists, ask if the user wants to remove it
+if os.path.isdir(topology_dir):
+    print("Results directory already exists")
+    print("Do you want to remove it? (y/n)")
+    answer = input()
+    if answer == "y":
+        shutil.rmtree(topology_dir)
+
+
+
 #check that results_dir exists
 if not os.path.isdir(results_dir):
     print("Results directory not found")
@@ -98,6 +108,7 @@ if not os.path.isdir(topology_dir):
 
 #save the config file inside the topology directory
 shutil.copy(config_file, topology_dir)
+
 
 #save the injection rates inside a file in the topology directory if it doesnt exist
 if not os.path.isfile(topology_dir + "/injection_rates.txt"):
@@ -187,8 +198,15 @@ else: #add the new packet sizes to the file
                     f.write(str(i) + " ")
 
 #copy the json file to the topology directory
+#shutil.copy(json_file, topology_dir)
+#copy the json file to the topology directory and rename it if it exists
+if os.path.isfile(topology_dir + "/" + json_file):
+    #rename the file
+    os.rename(topology_dir + "/" + json_file, topology_dir + "/" + json_file + ".old")
+
 shutil.copy(json_file, topology_dir)
-    
+
+
 
 #for each traffic, for each topology, for each injection rate, for each routing function, launch the job
 for traffic in data["traffic"]:
