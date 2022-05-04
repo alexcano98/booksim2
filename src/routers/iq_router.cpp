@@ -1723,7 +1723,7 @@ void IQRouter::_SWAllocEvaluate()
 				iter->second.second = dest_buf->IsFull() ? STALL_BUFFER_FULL : STALL_BUFFER_RESERVED;
 				continue;
 			}
-			bool const requested = _SWAllocAddReq_alex(input, vc, dest_output); //_SWAllocAddReq(input, vc, dest_output);
+			bool const requested = _SWAllocAddReq(input, vc, dest_output); //_SWAllocAddReq(input, vc, dest_output);
 			watched |= requested && f->watch;
 			continue;
 		}
@@ -1820,7 +1820,7 @@ void IQRouter::_SWAllocEvaluate()
 			}
 			else
 			{
-				bool const requested = _SWAllocAddReq_alex(input, vc, dest_output);//_SWAllocAddReq(input, vc, dest_output);
+				bool const requested = _SWAllocAddReq(input, vc, dest_output);//_SWAllocAddReq(input, vc, dest_output);
 				watched |= requested && f->watch;
 			}
 		}
