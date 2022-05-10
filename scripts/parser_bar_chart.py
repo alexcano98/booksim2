@@ -35,6 +35,8 @@ def main():
     sim_out = "sim_out.csv"
     cycles = "cycles.csv"
     run_time = "run_time.csv"
+    vc_utilization = "vc_util.csv"
+
     topology  = sys.argv[2]
 
     if topology == "":
@@ -113,7 +115,7 @@ def main():
     hops_avg_list = {}
     worst_flits_latency_list = {}
     worst_accepted_flits_list = {}
-
+    vc_utilization_values_list = {}
 
     os.chdir(out_dir)
     for t in traffics:
@@ -148,6 +150,12 @@ def main():
                             print("Error: run_time.csv does not exist")
                             exit(1)
 
+                        # Check if vc_utilization exists
+                        if not os.path.exists(sim_file + "_" + vc_utilization):
+                            print("sim_file: \n", sim_file)
+                            print("current directory: \n", os.getcwd())
+                            print("Error: vc_util.csv does not exist")
+                            exit(1)
 
                         # create plots directory
                         print("Creating plots directory...")
@@ -157,6 +165,11 @@ def main():
                         #catch any exception and throw it again
                         try:
                             df_sim = pd.read_csv(sim_file + "_" +sim_out, sep=',', header=None)
+                            #read df_vc_util file that contains in each line the vc utilization
+                            df_vc_util = pd.read_csv(sim_file + "_" +vc_utilization, sep='\t', header=None)
+                            #print("df_vc_util: \n", df_vc_util)
+
+
                         except Exception as e:
                             print("==============================ERROR===============================")
                             #Show filename and current directory
@@ -171,6 +184,8 @@ def main():
                         hops_avg = df_sim[H_AVG]
                         traffic_pattern = df_sim[1][0]
                         worst_accepted_flits = df_sim[F_W_ACC]
+                        # get df_vc_util values of the first column in a list
+                        vc_utilization_values = df_vc_util[0].tolist()
 
 
                         accepted_flits_list[routing] = round(100 * accepted_flits.mean())
@@ -178,7 +193,10 @@ def main():
                         traffic_pattern_list[routing] = traffic_pattern
                         hops_avg_list[routing] = float(hops_avg)
                         worst_accepted_flits_list[routing] = worst_accepted_flits
+                        vc_utilization_values_list[routing] = vc_utilization_values
 
+                    
+                    markers = ['v', '^', '*', '<', '>',  '*', 'p', '*', '*', '*', '*', '*']
                     if error == 1:
                         continue
                     #Throughput
@@ -219,6 +237,35 @@ def main():
                     plt.title('Hops [TP={}]'.format(traffic_pattern))
                     plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_hops_'+t+'.png')
                     print("Hops plot created")
+
+
+                    #VC Utilization
+                    data = pd.DataFrame(vc_utilization_values_list)
+                    data.plot(y=routings, legend=True, title='% VC Utilization')
+
+                    ax = data.plot()
+                    for i, line in enumerate(ax.get_lines()):
+                        if line.get_label() == 'injected_rate':
+                            print("pasando")
+                            continue
+                        line.set_marker(markers[i])
+                        #marker also the legend
+
+                    ax.legend(loc='upper left')
+
+                     #show only x range between 0 and 1.1
+                    #plt.xlim(0, num_vcs)
+                    plt.ylabel('% VC Utilization')
+                    plt.xlabel('VCs')
+                    plt.title('VCs util [TP={}]'.format(traffic_pattern))
+
+                    #show grid 0.1
+                    plt.grid(True, which='both', alpha=0.1)
+                    #plt.show()
+                    plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_VC_util_'+t+'.png')
+
+
+
 
                     """
                     #PLOT 4

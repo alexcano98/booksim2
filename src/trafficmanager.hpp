@@ -183,6 +183,7 @@ protected:
   vector<double> _overall_avg_accepted;
   vector<double> _overall_max_accepted;
   vector<double> _overall_vc_utilization;
+  int updated= 0;
 
 #ifdef TRACK_STALLS
   vector<vector<int> > _buffer_busy_stalls;

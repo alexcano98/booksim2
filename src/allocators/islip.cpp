@@ -182,8 +182,8 @@ void iSLIP_Sparse::Allocate()
           // Only update pointers if accepted during the 1st iteration
           if (iter == 0)
           {
-            _gptrs[output] = (input + 1) % _inputs;
-            _aptrs[input] = (output + 1) % _outputs;
+          _gptrs[output] = (input + 1) % _inputs;
+          _aptrs[input] = (output + 1) % _outputs;
           }
 
           break;

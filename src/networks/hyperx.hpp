@@ -91,4 +91,7 @@ void dal3_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outpu
 
 void omni_dor_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
 
+void minimal_turn_model_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
+void missrouting_turn_model_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
+
 #endif

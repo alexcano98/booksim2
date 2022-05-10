@@ -461,6 +461,7 @@ void SparseAllocator::PrintRequests(ostream *os) const
   *os << "]." << endl;
 }
 
+
 //==================================================
 // Global allocator allocation function
 //==================================================
@@ -492,6 +493,7 @@ Allocator *Allocator::NewAllocator(Module *parent, const string &name,
       param_str = alloc_type.substr(left + 1, right - left - 1);
     }
   }
+
   if (alloc_name == "max_size")
   {
     a = new MaxSizeMatch(parent, name, inputs, outputs);

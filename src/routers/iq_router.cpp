@@ -87,6 +87,7 @@ IQRouter::IQRouter(Configuration const &config, Module *parent,
 	// Alloc VC's
 	_buf.resize(_inputs);
 	_overall_vc_utilization.resize(_vcs);
+	_vc_assigments= 0;
 	for (int i = 0; i < _inputs; ++i)
 	{
 		ostringstream module_name;
@@ -875,9 +876,8 @@ void IQRouter::_VCAllocEvaluate()
 			//print the vc assignation
 			//cout << "Assigning VC " << match_vc << " at output " << match_output << " to VC " << vc << " at input " << input << "." << endl;
 			
-			_overall_vc_utilization[vc]++;
+			//_overall_vc_utilization[vc]++;
 
-			//Estaba aqui antes el vc utilization pero mejor abajo...
 
 			iter->second.second = output_and_vc;
 		}
@@ -1036,7 +1036,9 @@ void IQRouter::_VCAllocUpdate()
 						   << "." << endl;
 			}
 
-			//_overall_vc_utilization[vc]++;
+			_overall_vc_utilization[vc]++;
+			_vc_assigments++;
+
 
 			//printf("virtual channel allocation: %d %d %d\n", input, match_vc, match_output);
 			//_overall_vc_utilization[vc] ++;
@@ -1046,7 +1048,7 @@ void IQRouter::_VCAllocUpdate()
 
 			dest_buf->TakeBuffer(match_vc, input * _vcs + vc);
 
-			cur_buf->SetOutput(vc, match_output, match_vc);
+			cur_buf->SetOutput(vc, match_output, match_vc); //IMPORTANTE.....
 			cur_buf->SetState(vc, VC::active);
 			if (!_speculative)
 			{
@@ -1536,15 +1538,20 @@ bool IQRouter::_SWAllocAddReq(int input, int vc, int output)
 	return false;
 }
 
-bool IQRouter::_SWAllocAddReq_alex(int input, int vc, int output)
+//SOLO PARA SELECT ALLOCATOR!!!
+bool IQRouter::_SWAllocAddReq_alex(int input, int vc, int output, int vc_out)
 {
 	assert(input >= 0 && input < _inputs);
 	assert(vc >= 0 && vc < _vcs);
 	assert(output >= 0 && output < _outputs);
+	assert(_input_speedup == _output_speedup && _input_speedup == _vcs);
+	
+	
 
 	int const expanded_input = input * _input_speedup + vc % _input_speedup;
-	int const expanded_output = output * _output_speedup; //+ input % _output_speedup;
+	int const expanded_output = output * _output_speedup + vc_out % _output_speedup;
 
+	assert((_switch_hold_in[expanded_input] < 0) && (_switch_hold_out[expanded_output] < 0));
 
 	Buffer const *const cur_buf = _buf[input];
 	assert(!cur_buf->Empty(vc));
@@ -1555,84 +1562,37 @@ bool IQRouter::_SWAllocAddReq_alex(int input, int vc, int output)
 	assert(f);
 	assert(f->vc == vc);
 
-	if ((_switch_hold_in[expanded_input] < 0) &&
-		(_switch_hold_out[expanded_output] < 0))
+
+	Allocator *allocator = _sw_allocator;
+
+	int prio = cur_buf->GetPriority(vc);
+
+	if (_speculative && (cur_buf->GetState(vc) == VC::vc_alloc))
 	{
-
-		Allocator *allocator = _sw_allocator;
-		int prio = cur_buf->GetPriority(vc);
-
-		if (_speculative && (cur_buf->GetState(vc) == VC::vc_alloc))
+		if (_spec_sw_allocator)
 		{
-			if (_spec_sw_allocator)
-			{
-				allocator = _spec_sw_allocator;
-			}
-			else
-			{
-				assert(prio >= 0);
-				prio += numeric_limits<int>::min();
-			}
+			allocator = _spec_sw_allocator;
 		}
-
-		Allocator::sRequest req;
-
-		if (allocator->ReadRequest(req, expanded_input, expanded_output))
+		else
 		{
-			//round robin para acceder al crossbar
-			if (RoundRobinArbiter::Supersedes(vc, prio, req.label, req.in_pri,
-											  _sw_rr_offset[expanded_input], _vcs))
-			{
-				if (f->watch)
-				{
-					*gWatchOut << GetSimTime() << " | " << FullName() << " | "
-							   << "  Replacing earlier request from VC " << req.label
-							   << " for output " << output
-							   << "." << (expanded_output % _output_speedup)
-							   << " with priority " << req.in_pri
-							   << " (" << ((cur_buf->GetState(vc) == VC::active) ? "non-spec" : "spec")
-							   << ", pri: " << prio
-							   << ")." << endl;
-				}
+			assert(prio >= 0);
+			prio += numeric_limits<int>::min();
+		}
+	}
 
-				//_output_speedup iter over _output_speedup 
-				for(int i = 0; i < _output_speedup; i++)
-				{
-					allocator->RemoveRequest(expanded_input, expanded_output + i, req.label);
-					allocator->AddRequest(expanded_input, expanded_output+ i, vc, prio, prio);
-				}
-				//allocator->RemoveRequest(expanded_input, expanded_output, req.label);
-				//allocator->AddRequest(expanded_input, expanded_output, vc, prio, prio);
-				return true;
-			}
-			if (f->watch)
-			{
-				*gWatchOut << GetSimTime() << " | " << FullName() << " | "
-						   << "  Output " << output
-						   << "." << (expanded_output % _output_speedup)
-						   << " was already requested by VC " << req.label
-						   << " with priority " << req.in_pri
-						   << " (pri: " << prio
-						   << ")." << endl;
-			}
-			return false;
-		}
-		if (f->watch)
-		{
-			*gWatchOut << GetSimTime() << " | " << FullName() << " | "
-					   << "  Requesting output " << output
-					   << "." << (expanded_output % _output_speedup)
-					   << " (" << ((cur_buf->GetState(vc) == VC::active) ? "non-spec" : "spec")
-					   << ", pri: " << prio
-					   << ")." << endl;
-		}
+	if(vc_out != -1){
+
+		allocator->AddRequest(expanded_input, expanded_output, vc, 1, prio);
+
+	}else{
+		assert(false);
 		for(int i = 0; i < _output_speedup; i++)
 		{
-			allocator->AddRequest(expanded_input, expanded_output + i, vc, prio, prio);
+			allocator->AddRequest(expanded_input, expanded_output + i, vc, 0, prio);
 		}
-		//allocator->AddRequest(expanded_input, expanded_output, vc, prio, prio);
-		return true;
 	}
+	return true;
+	
 	if (f->watch)
 	{
 		*gWatchOut << GetSimTime() << " | " << FullName() << " | "
@@ -1662,7 +1622,7 @@ bool IQRouter::_SWAllocAddReq_alex(int input, int vc, int output)
 void IQRouter::_SWAllocEvaluate()
 {
 	bool watched = false;
-	//_sw_alloc_vcs filled by _SWAllocUpdate
+	
 	for (deque<pair<int, pair<pair<int, int>, int>>>::iterator iter = _sw_alloc_vcs.begin();
 		 iter != _sw_alloc_vcs.end();
 		 ++iter)
@@ -1723,7 +1683,7 @@ void IQRouter::_SWAllocEvaluate()
 				iter->second.second = dest_buf->IsFull() ? STALL_BUFFER_FULL : STALL_BUFFER_RESERVED;
 				continue;
 			}
-			bool const requested = _SWAllocAddReq(input, vc, dest_output); //_SWAllocAddReq(input, vc, dest_output);
+			bool const requested = _SWAllocAddReq(input, vc, dest_output);// _SWAllocAddReq_alex(input, vc, dest_output, dest_vc); //
 			watched |= requested && f->watch;
 			continue;
 		}
@@ -1820,7 +1780,8 @@ void IQRouter::_SWAllocEvaluate()
 			}
 			else
 			{
-				bool const requested = _SWAllocAddReq(input, vc, dest_output);//_SWAllocAddReq(input, vc, dest_output);
+
+				bool const requested = _SWAllocAddReq(input, vc, dest_output); // _SWAllocAddReq_alex(input, vc, dest_output,-1);//
 				watched |= requested && f->watch;
 			}
 		}
@@ -1839,8 +1800,11 @@ void IQRouter::_SWAllocEvaluate()
 		}
 	}
 
+	//_sw_allocator->PrintRequests(gWatchOut);
 	_sw_allocator->Allocate(); //ALLOCATE THE FLITS
-	
+	//_sw_allocator->PrintGrants(gWatchOut);
+
+
 	if (_spec_sw_allocator)
 		_spec_sw_allocator->Allocate();
 
@@ -2070,7 +2034,7 @@ void IQRouter::_SWAllocEvaluate()
 			assert(f);
 			assert(f->vc == vc);
 
-			if ((_switch_hold_in[expanded_input] >= 0) ||
+			if ((_switch_hold_in[expanded_input] >= 0) || //SI HAY CHOQUE...
 				(_switch_hold_out[expanded_output] >= 0))
 			{
 				if (f->watch)
@@ -2098,7 +2062,7 @@ void IQRouter::_SWAllocEvaluate()
 				}
 				iter->second.second = STALL_CROSSBAR_CONFLICT;
 			}
-			else if (_speculative && (cur_buf->GetState(vc) == VC::vc_alloc))
+			else if (_speculative && (cur_buf->GetState(vc) == VC::vc_alloc)) //COMPRUEBA QUYE COINCIDE PORQ YA SE HIZO ALLOCATION es para especulativo
 			{
 
 				assert(f->head);
@@ -2242,7 +2206,7 @@ void IQRouter::_SWAllocEvaluate()
 				}
 			}
 			else
-			{
+			{ // No credits.
 				assert(cur_buf->GetOutputPort(vc) == output);
 
 				int const match_vc = cur_buf->GetOutputVC(vc);

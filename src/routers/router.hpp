@@ -81,6 +81,7 @@ protected:
 #endif
 
 vector<double> _overall_vc_utilization;
+int _vc_assigments;
 
 #ifdef TRACK_STALLS
   vector<int> _buffer_busy_stalls;
@@ -149,6 +150,10 @@ public:
     assert((c >= 0) && (c < _classes));
     return _overall_vc_utilization;
   }
+
+  inline int GetVcAssignments() const {
+    return _vc_assigments;
+  }
   inline vector<int> const & GetOutstandingCredits(int c) const {
     assert((c >= 0) && (c < _classes));
     return _outstanding_credits[c];
@@ -164,6 +169,7 @@ public:
     _received_flits[c].assign(_received_flits[c].size(), 0);
     _sent_flits[c].assign(_sent_flits[c].size(), 0);
     _overall_vc_utilization.assign(_overall_vc_utilization.size(), 0);
+    _vc_assigments = 0;
   }
 
 #endif

@@ -46,6 +46,7 @@ public:
 
   void Allocate( );
 
+  //NO SE USA
   void MaskOutput( int out, int mask = 1 );
 
   virtual void PrintRequests( ostream * os = NULL ) const;

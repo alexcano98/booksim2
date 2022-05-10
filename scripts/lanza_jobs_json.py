@@ -85,10 +85,20 @@ if len(sys.argv) == 3 and sys.argv[2] == "1":
 #if the topology directory exists, ask if the user wants to remove it
 if os.path.isdir(topology_dir):
     print("Results directory already exists")
-    print("Do you want to remove it? (y/n)")
+    #print if the user wanna cancel the jobs
+    print("Do you want to cancel the jobs? (y/n)")
+    answer = input()
+    if answer == "y":
+        #execute the script cancel_slurm_jobs under the directory slurm_debug_scripts
+        os.chdir("slurm_debug_scripts")
+        subprocess.call(["sh", "cancel_slum_jobs.sh", topology])
+        os.chdir("..")
+        
+    print("Do you want to remove the directory? (y/n)")
     answer = input()
     if answer == "y":
         shutil.rmtree(topology_dir)
+
 
 
 
@@ -204,8 +214,9 @@ if os.path.isfile(topology_dir + "/" + json_file):
     #rename the file
     os.rename(topology_dir + "/" + json_file, topology_dir + "/" + json_file + ".old")
 
-shutil.copy(json_file, topology_dir)
-
+#copy the json file to the topology directory
+if not os.path.isfile(json_file):
+    shutil.copy(json_file, topology_dir)
 
 
 #for each traffic, for each topology, for each injection rate, for each routing function, launch the job

@@ -117,7 +117,7 @@ class IQRouter : public Router {
   virtual void _InternalStep( );
 
   bool _SWAllocAddReq(int input, int vc, int output);
-  bool _SWAllocAddReq_alex(int input, int vc, int output);
+  bool _SWAllocAddReq_alex(int input, int vc, int output, int vc_out);
 
   void _InputQueuing( );
 

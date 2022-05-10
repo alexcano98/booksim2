@@ -63,8 +63,22 @@ Router::Router(const Configuration &config,
   _crossbar_delay = (config.GetInt("st_prepare_delay") +
                      config.GetInt("st_final_delay"));
   _credit_delay = config.GetInt("credit_delay");
-  _input_speedup = config.GetInt("input_speedup");
-  _output_speedup = config.GetInt("output_speedup");
+
+   if(config.GetStr("crossbar_speedup") == "auto"){
+
+    _input_speedup = config.GetInt("num_vcs");
+    _output_speedup = config.GetInt("num_vcs");
+
+    //printf("Speedups modificados %d:",_input_speedup);
+   
+   }else{
+    
+    _input_speedup = config.GetInt("input_speedup");
+    _output_speedup = config.GetInt("output_speedup");
+   
+   }
+  
+
   _internal_speedup = config.GetFloat("internal_speedup");
   _classes = config.GetInt("classes");
 

@@ -2049,15 +2049,20 @@ void TrafficManager::_UpdateOverallStats()
     // print de la media de los outports para cl = 0
     for (int i = 0; i < _sent_flits[0].size(); i++)
     {
-      printf("Nodo %d sent flits %d\n", i, _sent_flits[0][i]);
+      printf("Node %d sent %d flits\n", i, _sent_flits[0][i]);
     }
 
     printf("====================================== \n");
+    double suma_total = 0;
     for (int i = 0; i < _overall_vc_utilization.size(); i++)
     {
-      printf("vc %d utilization %lf \n", i, _overall_vc_utilization[i]);
+      //print only 2 decimals of the utilization
+      printf("vc %d utilization %.2lf \n", i, 100* _overall_vc_utilization[i]/updated);
+      suma_total += _overall_vc_utilization[i];
     } //_overall_vc_utilization
-
+    //print the total utilization
+    printf("Total utilization %.2lf% \n", 100* suma_total/updated);
+    printf("====================================== \n");
     rate_min = (double)count_min / time_delta;
     rate_sum = (double)count_sum / time_delta;
     rate_max = (double)count_max / time_delta;
@@ -2250,10 +2255,12 @@ void TrafficManager::WriteStats(ostream &os) const
   }
 }
 
+
 void TrafficManager::UpdateStats()
 {
 
 #if defined(TRACK_FLOWS) || defined(TRACK_STALLS)
+  updated++;
   for (int c = 0; c < _classes; ++c)
   {
 #ifdef TRACK_FLOWS
@@ -2295,7 +2302,7 @@ void TrafficManager::UpdateStats()
 
         for (int vcs_i = 0; vcs_i < _overall_vc_utilization.size(); vcs_i++)
         {
-          _overall_vc_utilization[vcs_i] = _overall_vc_utilization[vcs_i] + r->GetOverallVcUtilization(c)[vcs_i];
+          _overall_vc_utilization[vcs_i] = _overall_vc_utilization[vcs_i] + (r->GetOverallVcUtilization(c)[vcs_i]/ r->GetVcAssignments())/_routers;
         }
 
         r->ResetFlowStats(c);
@@ -2310,10 +2317,10 @@ void TrafficManager::UpdateStats()
 #endif
       }
 
-      for (int vcs_i = 0; vcs_i < _overall_vc_utilization.size(); vcs_i++)
+      /*for (int vcs_i = 0; vcs_i < _overall_vc_utilization.size(); vcs_i++)
       {
         _overall_vc_utilization[vcs_i] = _overall_vc_utilization[vcs_i] / _routers;
-      }
+      }*/
     }
   }
 #ifdef TRACK_FLOWS
@@ -2388,6 +2395,7 @@ void TrafficManager::DisplayStats(ostream &os) const
     cout << "Class " << c << ":" << endl;
 
     cout
+        << "Hops average = " << _hop_stats[c]->Average() << endl
         << "Packet latency average = " << _plat_stats[c]->Average() << endl
         << "\tminimum = " << _plat_stats[c]->Min() << endl
         << "\tmaximum = " << _plat_stats[c]->Max() << endl
@@ -2562,7 +2570,7 @@ void TrafficManager::DisplayOverallStats(ostream &os) const
     os << "Accepted packet size average = " << _overall_avg_accepted[c] / _overall_avg_accepted_packets[c]
        << " (" << _total_sims << " samples)" << endl;
 
-    os << "Hops average = " << _overall_hop_stats[c] / (double)_total_sims
+    os << "Total hops average = " << _overall_hop_stats[c] / (double)_total_sims
        << " (" << _total_sims << " samples)" << endl;
 
 #ifdef TRACK_STALLS

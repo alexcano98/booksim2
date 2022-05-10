@@ -239,6 +239,7 @@ void SelAlloc::Allocate()
 #endif
 }
 
+//NO SE USA
 void SelAlloc::MaskOutput(int out, int mask)
 {
   assert((out >= 0) && (out < _outputs));
