@@ -86,12 +86,13 @@ void omni_war_priority2_hyperx( const Router *r, const Flit *f, int in_channel, 
 void omni_war_priority3_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 
 void dal_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
-void dal2_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
-void dal3_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
+void dal_1canal_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
 
 void omni_dor_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
 
 void minimal_turn_model_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
 void missrouting_turn_model_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
+void missrouting_turn_model_alex_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
+
 
 #endif
