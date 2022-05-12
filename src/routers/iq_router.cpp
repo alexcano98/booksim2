@@ -1036,8 +1036,10 @@ void IQRouter::_VCAllocUpdate()
 						   << "." << endl;
 			}
 
-			_overall_vc_utilization[vc]++;
-			_vc_assigments++;
+			if(output_and_vc < (gN *(gK-1))*_vcs){
+				_overall_vc_utilization[vc]++;
+				_vc_assigments++;
+			}
 
 
 			//printf("virtual channel allocation: %d %d %d\n", input, match_vc, match_output);

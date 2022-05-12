@@ -94,5 +94,7 @@ void minimal_turn_model_hyperx(const Router *r, const Flit *f, int in_channel, O
 void missrouting_turn_model_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
 void missrouting_turn_model_alex_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
 
+void fully_adaptive_turn_model_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
+
 
 #endif
