@@ -73,7 +73,7 @@ public:
 
 
 void dor_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
-void adaptive_xyyx_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
+void O1_turn_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void adaptive_dor_exit_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void valiant_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void ugal_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
@@ -82,19 +82,14 @@ void omni_war_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet 
 void adaptive_escape_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 
 void omni_war_priority_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
-void omni_war_priority2_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
-void omni_war_priority3_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 
-void dal_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
-void dal_1canal_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
+void dal_wormhole_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
+void dal_vct_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
+void dal_vct_turned_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
 
 void omni_dor_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
 
 void minimal_turn_model_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
 void missrouting_turn_model_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
-void missrouting_turn_model_alex_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
-
-void fully_adaptive_turn_model_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
-
 
 #endif

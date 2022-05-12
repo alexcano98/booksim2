@@ -80,7 +80,7 @@ void Hyperx::RegisterRoutingFunctions()
 {
 
 	gRoutingFunctionMap["dor_hyperx"] = &dor_hyperx;
-	gRoutingFunctionMap["O1_turn_hyperx"] = &adaptive_xyyx_hyperx;
+	gRoutingFunctionMap["O1_turn_hyperx"] = &O1_turn_hyperx;
 	gRoutingFunctionMap["adaptive_dor_exit_hyperx"] = &adaptive_dor_exit_hyperx; // wrong manner to approach channel escape
 	gRoutingFunctionMap["adaptive_escape_hyperx"] = &adaptive_escape_hyperx;
 	gRoutingFunctionMap["valiant_hyperx"] = &valiant_hyperx;
@@ -92,8 +92,9 @@ void Hyperx::RegisterRoutingFunctions()
 	gRoutingFunctionMap["omni_dor_hyperx"] =  &omni_dor_hyperx;
 
 
-	gRoutingFunctionMap["dal_hyperx"] = &dal_hyperx;
-	gRoutingFunctionMap["dal_1canal_hyperx"] = &dal_1canal_hyperx;
+	gRoutingFunctionMap["dal_wormhole_hyperx"] = &dal_wormhole_hyperx;
+	gRoutingFunctionMap["dal_vct_hyperx"] = &dal_vct_hyperx;
+	gRoutingFunctionMap["dal_vct_turned_hyperx"] = &dal_vct_turned_hyperx;
 	
 	
 	gRoutingFunctionMap["minimal_turn_model_hyperx"] = &minimal_turn_model_hyperx;
@@ -300,26 +301,24 @@ int calculateDORYX_routers(int nodo_destino, int nodo_actual)
 {
 
 	int salida = 0;
-	int i = 0;
-	int dim_help = -1;
+	int i = gN -1;
 
-	for (i = 0; i < gN; i++)
+	for (i = gN -1; i >= 0; i--)
 	{
 
-		int temp = (node_vectors[nodo_destino * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
+		salida = (node_vectors[nodo_destino * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
 
-		if (temp != 0)
+		if (salida != 0)
 		{
-			salida = temp;
-			dim_help = i;
+			break;
 		}
 	}
 
 	// printf("%d, %d\n", nodo_destino,nodo_actual);
 	// fflush(stdout);
-	assert(salida != 0 && dim_help != -1); // esto se puede cambiar, meter aqui la salida tmbn
+	assert(i >= 0 && i < gN); // esto se puede cambiar, meter aqui la salida tmbn
 
-	return dim_help * (gK - 1) + salida - 1; // esto es lo normalizado.
+	return i * (gK - 1) + salida - 1; // esto es lo normalizado.
 }
 
 int calculateDOR_ugal(int inyector_destino, int nodo_actual)
@@ -371,6 +370,15 @@ int find_distance_hyperx(int src, int dest)
 
 	return dist;
 }
+
+int getDataForVCRange(int vcBegin, int vcEnd, vector<int>& data){
+	int suma = 0;
+	for(int i = vcBegin; i <= vcEnd; i++){
+		suma += data[i];
+	}
+	return suma/(vcEnd - vcBegin + 1);
+}
+
 
 /*Para Ugal...*/
 int find_ran_intm_hyperx(int src, int dest)
@@ -471,33 +479,56 @@ void dor_hyperx(const Router *r, const Flit *f, int in_channel,
 }
 
 // ZYX or XYZ routing...
-void adaptive_xyyx_hyperx(const Router *r, const Flit *f, int in_channel,
-						  OutputSet *outputs, bool inject)
+void O1_turn_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject)
 {
 
-	assert(gNumVCs >= gN);
 	int vcBegin = 0, vcEnd = gNumVCs - 1;
-	int available_vcs = gNumVCs / 2;
 
+	if (f->type == Flit::READ_REQUEST)
+	{
+		vcBegin = gReadReqBeginVC;
+		vcEnd = gReadReqEndVC;
+	}
+	else if (f->type == Flit::WRITE_REQUEST)
+	{
+		vcBegin = gWriteReqBeginVC;
+		vcEnd = gWriteReqEndVC;
+	}
+	else if (f->type == Flit::READ_REPLY)
+	{
+		vcBegin = gReadReplyBeginVC;
+		vcEnd = gReadReplyEndVC;
+	}
+	else if (f->type == Flit::WRITE_REPLY)
+	{
+		vcBegin = gWriteReplyBeginVC;
+		vcEnd = gWriteReplyEndVC;
+	}
+	assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
+	assert(gNumVCs >= 2);
+	assert(gNumVCs >= gN);
+
+	
 	int out_port = -1;
-
+	outputs->Clear();
 	int nodo_actual = r->GetID();
 	int nodo_destino = calculateRouter(f->dest);
 
 	if (inject)
 	{
-
-		out_port = -1;
+		//out_port = -1;
+		outputs->AddRange(-1 , vcBegin, vcEnd);
 	}
 	else if (nodo_destino == nodo_actual)
 	{
 
 		out_port = gN * (gK - 1) + calculateExitPort(f->dest);
+		outputs->AddRange(out_port, vcBegin, vcEnd);
 	}
 	else
 	{
-
-		int dimension_salida = -1;
+		vector<int> free_credits = r->FreeCredits();
+		int available_vcs = gNumVCs / 2;
 
 		if (in_channel >= gN * (gK - 1)) // inyeccion
 		{
@@ -505,47 +536,34 @@ void adaptive_xyyx_hyperx(const Router *r, const Flit *f, int in_channel,
 			int out_xy = calculateDOR_routers(nodo_destino, nodo_actual);
 			int out_yx = calculateDORYX_routers(nodo_destino, nodo_actual);
 
-			if (r->GetUsedCredit(out_xy) < r->GetUsedCredit(out_yx))
+			int prio_xy = getDataForVCRange(out_xy * gNumVCs + vcBegin, out_xy * gNumVCs + available_vcs - 1, free_credits);
+			int prio_yx = getDataForVCRange(out_yx * gNumVCs + available_vcs, out_yx * gNumVCs + vcEnd, free_credits);
+
+			outputs->AddRange(out_xy, vcBegin, available_vcs - 1, prio_xy);
+			outputs->AddRange(out_yx, available_vcs, vcEnd, prio_yx);
+		}
+		else
+		{
+			int dimension_salida = f->vc / available_vcs;
+			if (dimension_salida == 1)
 			{
 
-				dimension_salida = 0;
-			}
-			else if (r->GetUsedCredit(out_xy) > r->GetUsedCredit(out_yx))
-			{
-
-				dimension_salida = 1;
+				out_port = calculateDORYX_routers(nodo_destino, nodo_actual);
+				vcBegin = available_vcs;
 			}
 			else
 			{
 
-				dimension_salida = RandomInt(1);
+				out_port = calculateDOR_routers(nodo_destino, nodo_actual);
+				vcEnd = available_vcs - 1;
 			}
-		}
-		else
-		{
-			dimension_salida = f->vc / available_vcs;
-			// printf("dimension_salida: %d \n", dimension_salida);
-		}
 
-		if (dimension_salida == 1)
-		{
+			//printf("vcBegin: %d, vcEnd: %d, hops: %d", vcBegin, vcEnd, f->hops);
+			//fflush(stdout);
 
-			out_port = calculateDORYX_routers(nodo_destino, nodo_actual);
-			vcBegin = available_vcs;
+			outputs->AddRange(out_port, vcBegin, vcEnd);
 		}
-		else
-		{
-
-			out_port = calculateDOR_routers(nodo_destino, nodo_actual);
-			vcEnd = available_vcs - 1;
-		}
-
-		assert(out_port != -1); // no deberia ser...
 	}
-
-	outputs->Clear();
-
-	outputs->AddRange(out_port, vcBegin, vcEnd);
 }
 
 void adaptive_escalera_hyperx(const Router *r, const Flit *f, int in_channel,
@@ -556,7 +574,8 @@ void adaptive_escalera_hyperx(const Router *r, const Flit *f, int in_channel,
 
 	int out_port = -1;
 
-	assert(gNumVCs >= gN);
+	outputs->Clear();
+
 
 	int nodo_actual = r->GetID();
 	int nodo_destino = calculateRouter(f->dest);
@@ -564,19 +583,35 @@ void adaptive_escalera_hyperx(const Router *r, const Flit *f, int in_channel,
 	if (inject)
 	{
 
-		out_port = -1;
+		//out_port = -1;
+		outputs->AddRange( -1, vcBegin, vcEnd);
 	}
 	else if (nodo_destino == nodo_actual)
 	{
 
 		out_port = gN * (gK - 1) + calculateExitPort(f->dest);
+		outputs->AddRange(out_port, vcBegin, vcEnd);
 	}
 	else
 	{
 
-		int dimension_salida = -1;
-		int min_occupancy = INT_MAX;
 		int available_vcs = gNumVCs / gN;
+		vector<int> free_credits = r->FreeCredits();
+		
+
+		if (in_channel >= gN * (gK - 1))
+		{ // inyeccion
+			vcBegin = 0;
+			vcEnd = available_vcs - 1;
+		}
+		else
+		{
+			vcBegin = f->hops * available_vcs;
+			vcEnd = vcBegin + available_vcs - 1;
+		}
+
+		//printf("vcBegin: %d, vcEnd: %d, hops: %d",vcBegin, vcEnd, f->hops);
+		//fflush(stdout);
 
 		for (int i = 0; i < gN; i++)
 		{
@@ -586,38 +621,20 @@ void adaptive_escalera_hyperx(const Router *r, const Flit *f, int in_channel,
 			if (salida != 0)
 			{ // Si hay que recorrer esta salida...
 
-				int occupancy = 0;
 				int puerto = i * (gK - 1) + salida - 1;
-
-				occupancy = r->GetUsedCredit(puerto);
-
+				int prio_min = getDataForVCRange(puerto * gNumVCs + vcBegin, puerto * gNumVCs + vcEnd, free_credits);
+				outputs->AddRange(puerto, vcBegin, vcEnd, prio_min);
+				
+				/*occupancy = r->GetUsedCredit(puerto);
 				if (occupancy < min_occupancy)
 				{
 					min_occupancy = occupancy;
 					dimension_salida = i;
-					out_port = puerto; // esto es lo normalizado.
-				}
+					out_port = puerto;
+				}*/
 			}
 		}
-
-		assert(out_port != -1); // no deberia ser...
-
-		if (in_channel >= gN * (gK - 1))
-		{ // inyeccion
-			vcBegin = 0;
-			vcEnd = available_vcs - 1;
-		}
-		else
-		{
-			int d = f->vc / available_vcs;
-			vcBegin = d * available_vcs;
-			vcEnd = vcBegin + available_vcs - 1;
-		}
 	}
-
-	outputs->Clear();
-
-	outputs->AddRange(out_port, vcBegin, vcEnd);
 }
 
 int getCreditOutportVC_hyperx(int outport, int vc, vector<int> &creditos)
@@ -808,20 +825,19 @@ void valiant_hyperx(const Router *r, const Flit *f, int in_channel,
 			if (f->ph == 0)
 			{
 				out_port = calculateDOR_routers(nodo_intermedio, nodo_actual);
-				vcEnd -= available_vcs;
+				vcEnd = available_vcs -1;
 			}
 			else
 			{
 				assert(f->ph == 1);
 				out_port = calculateDOR_routers(nodo_destino, nodo_actual);
-				vcBegin += available_vcs;
+				vcBegin = available_vcs;
 			}
 		}
 		else
 		{
 			out_port = gN * (gK - 1) + calculateExitPort(f->dest); // sacamos el outpor exacto
 			assert(f->ph == 1);
-			vcBegin += available_vcs;
 		}
 	}
 
@@ -1357,12 +1373,10 @@ void adaptive_escape_hyperx(const Router *r, const Flit *f, int in_channel,
 		}
 		else
 		{
+
+			vector<int> free_credits = r->FreeCredits();
 			out_port = calculateDOR_routers(targetr, r->GetID());
 			outputs->AddRange(out_port, vcEnd, vcEnd, 0);
-
-			// if (f->vc != vcEnd)
-			// dsf
-			//{ // adaptativo
 
 			int nodo_destino = targetr;
 			int nodo_actual = r->GetID();
@@ -1373,13 +1387,11 @@ void adaptive_escape_hyperx(const Router *r, const Flit *f, int in_channel,
 				int salida = (node_vectors[nodo_destino * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
 
 				if (salida != 0)
-				{ // Si hay que recorrer esta salida...
-
+				{
 					int puerto = i * (gK - 1) + salida - 1;
-					outputs->AddRange(puerto, vcBegin, vcEnd - 1, 1);
+					outputs->AddRange(puerto, vcBegin, vcEnd - 1, getDataForVCRange(puerto *gNumVCs + vcBegin, puerto * gNumVCs + vcEnd, free_credits));
 				}
 			}
-			//}
 		}
 	}
 }
@@ -1513,14 +1525,6 @@ int getPriority_omni(int free_credits, int distance_to_dest){ //int buff_size, i
 	return (free_credits + OBIAS) * (gN - distance_to_dest + HBIAS); //+ RandomInt(5) funciona mejor con esto.... 
 }
 
-int getDataForVCRange(int vcBegin, int vcEnd, vector<int>& data){
-	int suma = 0;
-	for(int i = vcBegin; i <= vcEnd; i++){
-		suma += data[i];
-	}
-	return suma/(vcEnd - vcBegin + 1);
-}
-
 
 void omni_war_priority_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject)
 {
@@ -1572,7 +1576,7 @@ void omni_war_priority_hyperx(const Router *r, const Flit *f, int in_channel, Ou
 	else
 	{
 
-		int canales_por_salto = gNumVCs / (2 * gN);
+		int canales_por_salto = gNumVCs / (2 * gN); //lo seteo asi para hacer un missrouting por dimension
 		if (in_channel >= (gK - 1) * gN)
 		{ // inyección
 			vcBegin = 0; //vcBegin is the first VC of the injection channel
@@ -1586,7 +1590,7 @@ void omni_war_priority_hyperx(const Router *r, const Flit *f, int in_channel, Ou
 		}
 
 		int distance_to_dest = find_distance_hyperx(f->dest, nodo_actual * gC); // esto es un apaño... xD
-		int available_vcs = (gNumVCs - vcEnd-1)/ canales_por_salto +1;//+1 -1
+		int available_vcs = (gNumVCs - vcEnd - 1)/ canales_por_salto + 1;
 		
 		vector<int> free_credits = r->FreeCredits();
 		
@@ -1687,8 +1691,8 @@ void omni_dor_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *
 		int distance_to_dest = find_distance_hyperx(f->dest, nodo_actual * gC);
 
 
-		if(dim_entrada < gN && node_vectors[nodo_fuente * gNumVCs + dim_entrada] != node_vectors[nodo_actual * gNumVCs + dim_entrada]
-			&& node_vectors[nodo_destino * gNumVCs + dim_entrada] != node_vectors[nodo_actual * gNumVCs + dim_entrada])
+		if(dim_entrada < gN && node_vectors[nodo_fuente * gN + dim_entrada] != node_vectors[nodo_actual * gN + dim_entrada]
+			&& node_vectors[nodo_destino * gN + dim_entrada] != node_vectors[nodo_actual * gN + dim_entrada])
 			{
 				//dateline
 				vcBegin = canales_por_salto;
@@ -1778,7 +1782,7 @@ int getPriority_dal2(int num_vcs, int free_credits, int distance_to_dest, int mi
 }
 
 
-void dal_1canal_hyperx(const Router *r, const Flit *f, int in_channel,
+void dal_vct_hyperx(const Router *r, const Flit *f, int in_channel,
 				 OutputSet *outputs, bool inject)
 {
 
@@ -1836,10 +1840,6 @@ void dal_1canal_hyperx(const Router *r, const Flit *f, int in_channel,
 			int nodo_destino = targetr;
 			int nodo_actual = r->GetID();
 
-			if (f->vc == vcBegin){
-				f->ph= 1; //Minimal to Destination
-			}
-
 			int distance_to_dest = find_distance_hyperx(f->dest, nodo_actual * gC);
 			int out_port_dor = calculateDOR_routers(targetr, r->GetID());
 	
@@ -1860,38 +1860,31 @@ void dal_1canal_hyperx(const Router *r, const Flit *f, int in_channel,
 
 					outputs->AddRange(puerto_min, escape_vcs, vcEnd, prio_min); // minimo , prio_min
 					
-			//		if (f->ph == 0)
-			//		{
-						int miss = 0;
-						for (int k_salida = 0; k_salida < (gK - 1); k_salida++)
+					int miss = 0;
+					for (int k_salida = 0; k_salida < (gK - 1); k_salida++)
+					{
+						if (k_salida != salida - 1)
 						{
-							if (k_salida != salida - 1)
+							int puerto_miss = i * (gK - 1) + k_salida; // salida - 1
+							int nodo_fuente = f->src / gC;
+							int condicion = (node_vectors[nodo_fuente * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
+							int prio_miss = getPriority_dal(buff_size, r->GetUsedCredit(puerto_miss), distance_to_dest + 1, 0, 0);
+
+							if (condicion == 0 && prio_miss > prio_min)
 							{
-								int puerto_miss = i * (gK - 1) + k_salida; // salida - 1
-								int nodo_fuente = f->src / gC;
-								int condicion = (node_vectors[nodo_fuente * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
-								int prio_miss = getPriority_dal(buff_size, r->GetUsedCredit(puerto_miss), distance_to_dest + 1, 0, 0);
+								outputs->AddRange(puerto_miss, escape_vcs, vcEnd, prio_miss); 
 
-								if (condicion == 0 && prio_miss > prio_min)
-								{
-									outputs->AddRange(puerto_miss, escape_vcs, vcEnd, prio_miss); 
-
-								}
 							}
 						}
-				//	}
-
+					}
 				}
 			}
-			//prio_dor = getPriority_dal(buff_size, r->GetUsedCredit(out_port_dor), distance_to_dest, 0, 0);
-			//outputs->AddRange(out_port_dor, escape_vcs, vcEnd, prio_dor);
 		}
 	}
 }
 
 
-
-void dal_hyperx(const Router *r, const Flit *f, int in_channel,
+void dal_wormhole_hyperx(const Router *r, const Flit *f, int in_channel,
 				 OutputSet *outputs, bool inject)
 {
 
@@ -1923,13 +1916,14 @@ void dal_hyperx(const Router *r, const Flit *f, int in_channel,
 	outputs->Clear();
 
 	int out_port = -1;
-	int escape_vcs = (vcEnd - vcBegin + 1) / 2; //1; //
+	int escape_vcs = 1; // (vcEnd - vcBegin + 1) / 2; //
 	
 	if (inject)
 	{
 
 		out_port = -1;
-		outputs->AddRange(out_port, vcBegin, vcEnd);
+		f->ph= 0;
+		outputs->AddRange(out_port, vcBegin + escape_vcs, vcEnd);
 	}
 	else
 	{ // si no se inyecta
@@ -1944,8 +1938,10 @@ void dal_hyperx(const Router *r, const Flit *f, int in_channel,
 		}
 		else
 		{
+			if (f->vc == vcBegin){
+				f->ph= 1; //Minimal to Destination
+			}
 
-			
 			int nodo_destino = targetr;
 			int nodo_actual = r->GetID();
 
@@ -1955,22 +1951,22 @@ void dal_hyperx(const Router *r, const Flit *f, int in_channel,
 			int prio_dor = getPriority_dal(buff_size, r->GetUsedCredit(out_port_dor), distance_to_dest, 0, 1);
 			outputs->AddRange(out_port_dor, vcBegin, vcBegin + escape_vcs - 1, prio_dor);
 			
-			if (f->vc >= escape_vcs)
-			{ // adaptativo
-				for (int i = 0; i < gN; i++)
-				{
-					int salida = (node_vectors[nodo_destino * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
+			for (int i = 0; i < gN; i++)
+			{
+				int salida = (node_vectors[nodo_destino * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
 
-					if (salida != 0)
-					{ // Si hay que recorrer esta salida...
+				if (salida != 0)
+				{ // Si hay que recorrer esta salida...
 
-						int puerto_min = i * (gK - 1) + salida - 1;
+					int puerto_min = i * (gK - 1) + salida - 1;
 
-						int prio_min = getPriority_dal(buff_size, r->GetUsedCredit(puerto_min), distance_to_dest, 0, 0);
+					int prio_min = getPriority_dal(buff_size, r->GetUsedCredit(puerto_min), distance_to_dest, 0, 0);
 
-						outputs->AddRange(puerto_min, escape_vcs, vcEnd, prio_min); // minimo , prio_min
-						
-						int miss = 0;
+					outputs->AddRange(puerto_min, escape_vcs, vcEnd, prio_min); // minimo , prio_min
+					
+					int miss = 0;
+					if (f->ph == 0)
+					{
 						for (int k_salida = 0; k_salida < (gK - 1); k_salida++)
 						{
 							if (k_salida != salida - 1)
@@ -1982,8 +1978,7 @@ void dal_hyperx(const Router *r, const Flit *f, int in_channel,
 
 								if (condicion == 0 && prio_miss > prio_min)
 								{
-									outputs->AddRange(puerto_miss, escape_vcs, vcEnd, prio_miss); 
-
+									outputs->AddRange(puerto_miss, escape_vcs, vcEnd, prio_miss);
 								}
 							}
 						}
@@ -2064,7 +2059,7 @@ void minimal_turn_model_hyperx(const Router *r, const Flit *f, int in_channel,
 					if (salida < 0) // Si hay que recorrer esta salida...
 					{
 						fase = 0;
-						int puerto_min = i * (gK - 1) + (salida+gK) - 1;
+						int puerto_min = i * (gK - 1) + (salida + gK) - 1;
 						int prio_min = getPriority_dal(buff_size, r->GetUsedCredit(puerto_min), distance_to_dest, 0, 0);
 						outputs->AddRange(puerto_min, vcBegin, vcEnd, prio_min);
 						
@@ -2126,7 +2121,7 @@ void missrouting_turn_model_hyperx(const Router *r, const Flit *f, int in_channe
 		vcEnd = gWriteReplyEndVC;
 	}
 	assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
-	assert(gNumVCs >= 2);
+	//assert(gNumVCs >= 2);
 
 	outputs->Clear();
 
@@ -2136,7 +2131,7 @@ void missrouting_turn_model_hyperx(const Router *r, const Flit *f, int in_channe
 	{
 		f->ph = 0;
 		out_port = -1;
-		outputs->AddRange(out_port, vcBegin + 1, vcEnd);
+		outputs->AddRange(out_port, vcBegin, vcEnd);
 	}
 	else
 	{ // si no se inyecta
@@ -2155,7 +2150,6 @@ void missrouting_turn_model_hyperx(const Router *r, const Flit *f, int in_channe
 			int nodo_actual = r->GetID();
 			int nodo_fuente = calculateRouter(f->src);
 
-			int escape_vcs = 1;
 			int distance_to_dest = find_distance_hyperx(f->dest, nodo_actual * gC);
 			int fase = f->ph;
 			
@@ -2177,7 +2171,7 @@ void missrouting_turn_model_hyperx(const Router *r, const Flit *f, int in_channe
 
 						if(condicion == 0){
 
-							for(int j = 0; j < (gK-1); j++){
+							for(int j = index+1; j < (gK-1); j++){
 
 								int puerto_miss = i * (gK - 1) + j;
 								int prio_miss = getPriority_dal(buff_size, r->GetUsedCredit(puerto_miss), distance_to_dest+1, 0, 0);
@@ -2205,10 +2199,170 @@ void missrouting_turn_model_hyperx(const Router *r, const Flit *f, int in_channe
 					{
 						fase = 0;
 						int puerto_min = i * (gK - 1) + salida - 1;
-						int prio_min = getPriority_dal(buff_size, r->GetUsedCredit(puerto_min), distance_to_dest, 0, 1);
+						int prio_min = getPriority_dal(buff_size, r->GetUsedCredit(puerto_min), distance_to_dest, 0, 0);
 						outputs->AddRange(puerto_min, vcBegin, vcEnd, prio_min); 
-
 						
+					}
+				}
+			}
+		}
+	}
+}
+
+void add_escape_turn_model( OutputSet *outputs, const Router *r, const Flit *f,  int nodo_destino,
+	int nodo_actual, int vcBegin, int vcEnd, int distance_to_dest){
+
+	int nodo_fuente = r->GetID();
+	int fase = f->ph;
+
+	if(fase == 0){
+		fase = 1;
+		for (int i = 0; i < gN; i++)
+		{
+			int salida = node_vectors[nodo_destino * gN + i] - node_vectors[nodo_actual * gN + i];
+
+			if (salida < 0) // Si hay que recorrer esta salida...
+			{
+				fase = 0;
+				int index = (salida + gK);
+				int puerto_min = i * (gK - 1) + index - 1;
+				int prio_min = getPriority_dal(buff_size, r->GetUsedCredit(puerto_min), distance_to_dest, 0, 1);
+				outputs->AddRange(puerto_min, vcBegin, vcEnd, prio_min);
+
+				int condicion = (node_vectors[nodo_fuente * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
+
+				if(condicion == 0){
+
+					for(int j = index+1; j < (gK-1); j++){
+
+						int puerto_miss = i * (gK - 1) + j;
+						int prio_miss = getPriority_dal(buff_size, r->GetUsedCredit(puerto_miss), distance_to_dest+1, 0, 1);
+						if(j != index- 1 && prio_miss > prio_min){
+							outputs->AddRange(puerto_miss, vcBegin, vcEnd, prio_miss);
+						}
+					}
+
+				}
+
+			}
+		}
+
+	}
+
+	f->ph = fase;
+
+	if(fase == 1){
+
+		for (int i = 0; i < gN; i++)
+		{
+			int salida = node_vectors[nodo_destino * gN + i] - node_vectors[nodo_actual * gN + i];
+
+			if (salida > 0) // Si hay que recorrer esta salida...
+			{
+				fase = 0;
+				int puerto_min = i * (gK - 1) + salida - 1;
+				int prio_min = getPriority_dal(buff_size, r->GetUsedCredit(puerto_min), distance_to_dest, 0, 1);
+				outputs->AddRange(puerto_min, vcBegin, vcEnd, prio_min); 
+				
+			}
+		}
+	}
+
+}
+
+
+void dal_vct_turned_hyperx(const Router *r, const Flit *f, int in_channel,
+				 OutputSet *outputs, bool inject)
+{
+
+	int vcBegin = 0, vcEnd = gNumVCs - 1;
+
+	if (f->type == Flit::READ_REQUEST)
+	{
+		vcBegin = gReadReqBeginVC;
+		vcEnd = gReadReqEndVC;
+	}
+	else if (f->type == Flit::WRITE_REQUEST)
+	{
+		vcBegin = gWriteReqBeginVC;
+		vcEnd = gWriteReqEndVC;
+	}
+	else if (f->type == Flit::READ_REPLY)
+	{
+		vcBegin = gReadReplyBeginVC;
+		vcEnd = gReadReplyEndVC;
+	}
+	else if (f->type == Flit::WRITE_REPLY)
+	{
+		vcBegin = gWriteReplyBeginVC;
+		vcEnd = gWriteReplyEndVC;
+	}
+	assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
+	assert(gNumVCs >= 2);
+
+	outputs->Clear();
+
+	int out_port = -1;
+
+	if (inject)
+	{
+
+		out_port = -1;
+		f->ph= 0;
+		outputs->AddRange(out_port, vcBegin + 1, vcEnd);
+	}
+	else
+	{ // si no se inyecta
+
+		int dest = f->dest;
+		int targetr = (int)(dest / gC);
+
+		if (targetr == r->GetID())
+		{ // if we are at the final router, yay, output to client
+			out_port = gN * (gK - 1) + calculateExitPort(dest);
+			outputs->AddRange(out_port, vcBegin, vcEnd);
+		}
+		else
+		{
+
+			int escape_vcs = 1;
+			int nodo_destino = targetr;
+			int nodo_actual = r->GetID();
+
+			int distance_to_dest = find_distance_hyperx(f->dest, nodo_actual * gC);
+
+			add_escape_turn_model(outputs, r, f, nodo_destino, nodo_actual, vcBegin, escape_vcs-1,distance_to_dest);
+
+			// adaptativo
+			for (int i = 0; i < gN; i++)
+			{
+				int salida = (node_vectors[nodo_destino * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
+
+				if (salida != 0)
+				{ // Si hay que recorrer esta salida...
+
+					int puerto_min = i * (gK - 1) + salida - 1;
+
+					int prio_min = getPriority_dal(buff_size, r->GetUsedCredit(puerto_min), distance_to_dest, 0, 0);
+
+					outputs->AddRange(puerto_min, escape_vcs, vcEnd, prio_min); // minimo , prio_min
+					
+					int miss = 0;
+					for (int k_salida = 0; k_salida < (gK - 1); k_salida++)
+					{
+						if (k_salida != salida - 1)
+						{
+							int puerto_miss = i * (gK - 1) + k_salida; // salida - 1
+							int nodo_fuente = f->src / gC;
+							int condicion = (node_vectors[nodo_fuente * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
+							int prio_miss = getPriority_dal(buff_size, r->GetUsedCredit(puerto_miss), distance_to_dest + 1, 0, 0);
+
+							if (condicion == 0 && prio_miss > prio_min)
+							{
+								outputs->AddRange(puerto_miss, escape_vcs, vcEnd, prio_miss); 
+
+							}
+						}
 					}
 				}
 			}
