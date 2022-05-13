@@ -7,3 +7,9 @@ results/
 fichero.txt
 sbatch_archive/*
 prueba/*
+notas/*
+runfiles/*
+
+fichero.txt
+.gitignore
+.vscode
