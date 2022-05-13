@@ -1,0 +1,13 @@
+{
+    "topology" : "2D_TFM_missrouting",
+    "injection_rate" : [1.0],
+    "traffic": ["uniform", "tornado_alex", "tornado_alex_half"],
+    "routing_function" :["valiant", "ugal", "omni_war", "omni_dor", "dal_vct", "dal_vct_turned", "missrouting_turn_model"],
+    "results_dir" : "prueba",
+    "config_file" : "runfiles/hyperx/hyperx_topology_2vcs_40x40x40",
+    "num_vcs" : [2,4,8],
+    "allocator" : [ "select"],
+    "packet_size" : [1],
+    "string" : " alloc_iters=3 vc_busy_when_full=1 vc_prioritize_empty=1 crossbar_speedup=auto"  
+    
+}

@@ -2047,22 +2047,26 @@ void TrafficManager::_UpdateOverallStats()
 
     printf("====================================== \n");
     // print de la media de los outports para cl = 0
+    int suma_mean_injected = 0;
     for (int i = 0; i < _sent_flits[0].size(); i++)
     {
       printf("Node %d sent %d flits\n", i, _sent_flits[0][i]);
+      suma_mean_injected += _sent_flits[0][i];
+      
     }
 
-    printf("====================================== \n");
-    double suma_total = 0;
-    for (int i = 0; i < _overall_vc_utilization.size(); i++)
+    double mean_injected = suma_mean_injected / _nodes;
+    //calculate the deviation from the average
+    double dev_total_injected = 0;
+    for (int i = 0; i < _sent_flits[0].size(); i++)
     {
-      //print only 2 decimals of the utilization
-      printf("vc %d utilization %.2lf \n", i, 100* _overall_vc_utilization[i]/updated);
-      suma_total += _overall_vc_utilization[i];
-    } //_overall_vc_utilization
-    //print the total utilization
-    printf("Total utilization %.2lf% \n", 100* suma_total/updated);
+      dev_total_injected += abs(_sent_flits[0][i] - mean_injected) * abs(_sent_flits[0][i] - mean_injected);
+    }
+    double dev_injected = dev_total_injected / _nodes;
+    //square root of the deviation
+    dev_injected = sqrt(dev_injected);
     printf("====================================== \n");
+   
     rate_min = (double)count_min / time_delta;
     rate_sum = (double)count_sum / time_delta;
     rate_max = (double)count_max / time_delta;
@@ -2086,6 +2090,49 @@ void TrafficManager::_UpdateOverallStats()
     _overall_min_accepted[c] += rate_min;
     _overall_avg_accepted[c] += rate_avg;
     _overall_max_accepted[c] += rate_max;
+     //printf("====================================== \n");
+    // print de la media de los outports para cl = 0
+    // list of deviations from the average
+    int suma_mean_accepted = 0;
+    for (int i = 0; i < _accepted_flits[0].size(); i++)
+    {
+      suma_mean_accepted += _accepted_flits[0][i];
+      printf("Node %d accepted %d flits\n", i, _accepted_flits[0][i]);
+    }
+    double mean_accepted = suma_mean_accepted / _nodes;
+    //calculate the deviation from the average
+    double dev_total_accepted = 0;
+    for (int i = 0; i < _accepted_flits[0].size(); i++)
+    {
+      dev_total_accepted += abs(_accepted_flits[0][i] - mean_accepted) * abs(_accepted_flits[0][i] - mean_accepted);
+    }
+    double dev_accepted = dev_total_accepted / _nodes;
+    //square root of the deviation
+    dev_accepted = sqrt(dev_accepted);
+
+    printf("====================================== \n");
+    printf("Deviation from the average accepted: %.5lf \n", dev_accepted);
+
+    //print jain's fairness index for the accepted flits
+    double variation_coefficient_accepted = dev_accepted/mean_accepted;
+    printf("Jain's fairness index accepted: %.5lf \n", 1/(1+variation_coefficient_accepted));
+
+    double variation_coefficient_injected = dev_injected/mean_injected;
+    printf("Deviation from the average injected: %.5lf \n", dev_injected);
+    printf("Jain's fairness index injected: %.5lf \n", 1/(1+variation_coefficient_injected));
+    printf("====================================== \n");
+
+     double suma_total = 0;
+    for (int i = 0; i < _overall_vc_utilization.size(); i++)
+    {
+      //print only 2 decimals of the utilization
+      printf("vc %d utilization %.2lf \n", i, 100* (_overall_vc_utilization[i]/updated) );
+      suma_total += _overall_vc_utilization[i];
+    } //_overall_vc_utilization
+    //print the total utilization
+    printf("Total utilization %.2lf% \n", 100* suma_total/updated);
+    printf("====================================== \n");
+
     _ComputeStats(_accepted_packets[c], &count_sum, &count_min, &count_max);
     rate_min = (double)count_min / time_delta;
     rate_sum = (double)count_sum / time_delta;

@@ -886,7 +886,7 @@ void ugal_hyperx(const Router *r, const Flit *f, int in_channel,
 		int dest = f->dest; // flatfly_transformation(f->dest);
 
 		int rID = r->GetID();
-		int _concentration = gC;
+		//int _concentration = gC;
 		int found;
 		int debug = 0;
 		int tmp_out_port, _ran_intm;
@@ -1557,7 +1557,7 @@ void omni_war_priority_hyperx(const Router *r, const Flit *f, int in_channel, Ou
 	int out_port = -1;
 
 	int nodo_destino = calculateRouter(f->dest);
-	int nodo_fuente = calculateRouter(f->src);
+	//int nodo_fuente = calculateRouter(f->src);
 	int nodo_actual = r->GetID();
 
 	if (inject)
@@ -1860,7 +1860,6 @@ void dal_vct_hyperx(const Router *r, const Flit *f, int in_channel,
 
 					outputs->AddRange(puerto_min, escape_vcs, vcEnd, prio_min); // minimo , prio_min
 					
-					int miss = 0;
 					for (int k_salida = 0; k_salida < (gK - 1); k_salida++)
 					{
 						if (k_salida != salida - 1)
@@ -1964,7 +1963,6 @@ void dal_wormhole_hyperx(const Router *r, const Flit *f, int in_channel,
 
 					outputs->AddRange(puerto_min, escape_vcs, vcEnd, prio_min); // minimo , prio_min
 					
-					int miss = 0;
 					if (f->ph == 0)
 					{
 						for (int k_salida = 0; k_salida < (gK - 1); k_salida++)
@@ -2047,7 +2045,6 @@ void minimal_turn_model_hyperx(const Router *r, const Flit *f, int in_channel,
 			int nodo_actual = r->GetID();
 
 			int distance_to_dest = find_distance_hyperx(f->dest, nodo_actual * gC);
-			int out_port_dor = calculateDOR_routers(targetr, r->GetID());
 			int fase = f->ph;
 			
 			if(fase == 0){
@@ -2347,7 +2344,6 @@ void dal_vct_turned_hyperx(const Router *r, const Flit *f, int in_channel,
 
 					outputs->AddRange(puerto_min, escape_vcs, vcEnd, prio_min); // minimo , prio_min
 					
-					int miss = 0;
 					for (int k_salida = 0; k_salida < (gK - 1); k_salida++)
 					{
 						if (k_salida != salida - 1)

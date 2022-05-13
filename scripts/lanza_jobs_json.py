@@ -245,6 +245,9 @@ for traffic in data["traffic"]:
                         + "_" + routing_function + "_" + str(allocator) + "_" + str(packet_size)+ ".err")
 
                         file.write("\n")
+                        #set 400MB of memory to the job
+                        file.write("#SBATCH --mem=1500MB")
+                        file.write("\n")
                         file.write("./src/booksim " + config_file + " traffic=" + traffic + " num_vcs=" + str(num_vcs) \
                         + " injection_rate=" + str(injection_rate) + " routing_function=" + routing_function + " vc_allocator=" + str(allocator) \
                           + " sw_allocator="+ allocator +" packet_size=" + str(packet_size) + string_to_append)
