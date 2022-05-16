@@ -36,6 +36,8 @@ def main():
     cycles = "cycles.csv"
     run_time = "run_time.csv"
     vc_utilization = "vc_util.csv"
+    fairness_injected = "jain_inected.csv"
+    fairness_accepted = "jain_accepted.csv"
 
     topology  = sys.argv[2]
 
@@ -117,6 +119,9 @@ def main():
     worst_accepted_flits_list = {}
     vc_utilization_values_list = {}
 
+    fairness_injected_values_list = {}
+    fairness_accepted_values_list = {}
+
     os.chdir(out_dir)
     for t in traffics:
         # move to output directory
@@ -157,6 +162,20 @@ def main():
                             print("Error: vc_util.csv does not exist")
                             exit(1)
 
+                        # Check if fairness_injected exists
+                        if not os.path.exists(sim_file + "_" + fairness_injected):
+                            print("sim_file: \n", sim_file)
+                            print("current directory: \n", os.getcwd())
+                            print("Error: jain_inected.csv does not exist")
+                            exit(1)
+                        
+                        # Check if fairness_accepted exists
+                        if not os.path.exists(sim_file + "_" + fairness_accepted):
+                            print("sim_file: \n", sim_file)
+                            print("current directory: \n", os.getcwd())
+                            print("Error: jain_accepted.csv does not exist")
+                            exit(1)
+
                         # create plots directory
                         print("Creating plots directory...")
                         if not os.path.exists('plots'):
@@ -167,6 +186,8 @@ def main():
                             df_sim = pd.read_csv(sim_file + "_" +sim_out, sep=',', header=None)
                             #read df_vc_util file that contains in each line the vc utilization
                             df_vc_util = pd.read_csv(sim_file + "_" +vc_utilization, sep='\t', header=None)
+                            df_fairness_injected = pd.read_csv(sim_file + "_" + fairness_injected, sep='\t', header=None)
+                            df_fairness_accepted = pd.read_csv(sim_file + "_" + fairness_accepted, sep='\t', header=None)
                             #print("df_vc_util: \n", df_vc_util)
 
 
@@ -186,6 +207,10 @@ def main():
                         worst_accepted_flits = df_sim[F_W_ACC]
                         # get df_vc_util values of the first column in a list
                         vc_utilization_values = df_vc_util[0].tolist()
+                        # get df_fairness_injected values of the first column in a list
+                        fairness_injected_values = df_fairness_injected[0].tolist()
+                        # get df_fairness_accepted values of the first column in a list
+                        fairness_accepted_values = df_fairness_accepted[0].tolist()
 
 
                         accepted_flits_list[routing] = round(100 * accepted_flits.mean())
@@ -194,6 +219,10 @@ def main():
                         hops_avg_list[routing] = float(hops_avg)
                         worst_accepted_flits_list[routing] = worst_accepted_flits
                         vc_utilization_values_list[routing] = vc_utilization_values
+
+                        fairness_injected_values_list[routing] = fairness_injected_values
+                        fairness_accepted_values_list[routing] = fairness_accepted_values
+
 
                     
                     markers = ['v', '^', '*', '<', '>',  '*', 'p', '*', '*', '*', '*', '*']
@@ -263,6 +292,41 @@ def main():
                     plt.grid(True, which='both', alpha=0.1)
                     #plt.show()
                     plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_VC_util_'+t+'.png')
+
+                    #Fairness injected
+                    d = {"routings": list(fairness_injected_values_list.keys()), "fairness_injected": list(fairness_injected_values_list.values())}
+                    data = pd.DataFrame(data=d)
+                    ax =  data.plot.bar(y="fairness_injected", x="routings", legend=False, title='Jain index injected')
+                    ax.set_xlabel('Routing Functions')
+                    ax.set_ylabel('Index')
+                    ax.set_title('Jain index injection')
+                    ax.set_xticklabels(routings, rotation=30)
+                    #show numbers on bars
+                    for p in ax.patches:
+                        ax.annotate(str(p.get_height()), (p.get_x() * 1.005, p.get_height() * 1.005))
+                    #show the grid
+                    ax.grid(True)
+                    plt.title('Fairness [TP={}]'.format(traffic_pattern))
+                    plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_fairness_injected_'+t+'.png')
+                    print("Fairness plot created")
+
+                    #Fairness accepted
+                    d = {"routings": list(fairness_accepted_values_list.keys()), "fairness_accepted": list(fairness_accepted_values_list.values())}
+                    data = pd.DataFrame(data=d)
+                    ax =  data.plot.bar(y="fairness_accepted", x="routings", legend=False, title='Jain index accepted')
+                    ax.set_xlabel('Routing Functions')
+                    ax.set_ylabel('Index')
+                    ax.set_title('Jain index accepted')
+                    ax.set_xticklabels(routings, rotation=30)
+                    #show numbers on bars
+                    for p in ax.patches:
+                        ax.annotate(str(p.get_height()), (p.get_x() * 1.005, p.get_height() * 1.005))
+                    #show the grid
+                    ax.grid(True)
+                    plt.title('Fairness [TP={}]'.format(traffic_pattern))
+                    plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_fairness_accepted_'+t+'.png')
+                    print("Fairness plot created")
+
 
 
 

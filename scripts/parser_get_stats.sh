@@ -105,6 +105,8 @@ do
                     grep "Total run time" ${OUT_DIR}/${traffic}/${num_vcs}_${inj_rate}_${routing}_${allocator}_${packet_size}.out | awk '{print $4}' >> ${PARSED_DIR}/${traffic}/${num_vcs}_${allocator}_${routing}_${packet_size}_run_time.csv
                     #grep "Total hops average" ${OUT_DIR}/${traffic}/${num_vcs}_${inj_rate}_${routing}_${allocator}_${packet_size}.out | awk '{print $4}' >> ${PARSED_DIR}/${traffic}/${num_vcs}_${allocator}_${routing}_${packet_size}_hops_avg.csv
                     grep "utilization" ${OUT_DIR}/${traffic}/${num_vcs}_${inj_rate}_${routing}_${allocator}_${packet_size}.out | awk '{print $4}' >> ${PARSED_DIR}/${traffic}/${num_vcs}_${allocator}_${routing}_${packet_size}_vc_util.csv
+                    grep "Jain's fairness index accepted:" ${OUT_DIR}/${traffic}/${num_vcs}_${inj_rate}_${routing}_${allocator}_${packet_size}.out | awk '{print $5}' >> ${PARSED_DIR}/${traffic}/${num_vcs}_${allocator}_${routing}_${packet_size}_jain_accepted.csv
+                    grep "Jain's fairness index injected:" ${OUT_DIR}/${traffic}/${num_vcs}_${inj_rate}_${routing}_${allocator}_${packet_size}.out | awk '{print $5}' >> ${PARSED_DIR}/${traffic}/${num_vcs}_${allocator}_${routing}_${packet_size}_jain_injected.csv
 
                     done
                     # Delete "results:" from the beginning of the lines
