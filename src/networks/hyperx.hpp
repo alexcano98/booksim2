@@ -85,6 +85,7 @@ void omni_war_priority_hyperx( const Router *r, const Flit *f, int in_channel, O
 
 void dal_wormhole_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
 void dal_vct_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
+void dal_vct_random_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
 void dal_vct_turned_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
 
 void omni_dor_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);

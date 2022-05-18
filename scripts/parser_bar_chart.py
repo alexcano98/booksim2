@@ -36,7 +36,7 @@ def main():
     cycles = "cycles.csv"
     run_time = "run_time.csv"
     vc_utilization = "vc_util.csv"
-    fairness_injected = "jain_inected.csv"
+    fairness_injected = "jain_injected.csv"
     fairness_accepted = "jain_accepted.csv"
 
     topology  = sys.argv[2]
@@ -166,7 +166,7 @@ def main():
                         if not os.path.exists(sim_file + "_" + fairness_injected):
                             print("sim_file: \n", sim_file)
                             print("current directory: \n", os.getcwd())
-                            print("Error: jain_inected.csv does not exist")
+                            print("Error: jain_injected.csv does not exist")
                             exit(1)
                         
                         # Check if fairness_accepted exists
