@@ -1581,6 +1581,10 @@ void TrafficManager::_ClearStats()
     _sent_flits[c].assign(_nodes, 0);
     _accepted_flits[c].assign(_nodes, 0);
 
+    _overall_vc_utilization.assign(_vcs,0);
+    _vc_assigments = 0;
+    
+
 #ifdef TRACK_STALLS
     _buffer_busy_stalls[c].assign(_subnets * _routers, 0);
     _buffer_conflict_stalls[c].assign(_subnets * _routers, 0);
@@ -2126,11 +2130,12 @@ void TrafficManager::_UpdateOverallStats()
     for (int i = 0; i < _overall_vc_utilization.size(); i++)
     {
       //print only 2 decimals of the utilization
-      printf("vc %d utilization %.2lf \n", i, 100* (_overall_vc_utilization[i]/updated) );
+      printf("vc %d utilization %.2lf \n", i, 100* (_overall_vc_utilization[i]/_vc_assigments) );
       suma_total += _overall_vc_utilization[i];
     } //_overall_vc_utilization
     //print the total utilization
-    printf("Total utilization %.2lf% \n", 100* suma_total/updated);
+    printf("Total utilization %.2lf% \n", 100* suma_total/_vc_assigments);
+    printf("Total assigments of VCs %d \n", _vc_assigments);
     printf("====================================== \n");
 
     _ComputeStats(_accepted_packets[c], &count_sum, &count_min, &count_max);
@@ -2347,9 +2352,11 @@ void TrafficManager::UpdateStats()
           *_active_packets_out << r->GetActivePackets(c) << trail_char;
         // if(_overall_vc_utilization_out) *_overall_vc_utilization_out << r->GetOverallVcUtilization(c) << trail_char;
 
+        _vc_assigments += r->GetVcAssignments();
         for (int vcs_i = 0; vcs_i < _overall_vc_utilization.size(); vcs_i++)
         {
-          _overall_vc_utilization[vcs_i] = _overall_vc_utilization[vcs_i] + (r->GetOverallVcUtilization(c)[vcs_i]/ r->GetVcAssignments())/_routers;
+          _overall_vc_utilization[vcs_i] = _overall_vc_utilization[vcs_i] + r->GetOverallVcUtilization(c)[vcs_i];
+          
         }
 
         r->ResetFlowStats(c);

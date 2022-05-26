@@ -183,6 +183,7 @@ protected:
   vector<double> _overall_avg_accepted;
   vector<double> _overall_max_accepted;
   vector<double> _overall_vc_utilization;
+  int _vc_assigments;
   int updated= 0;
 
 #ifdef TRACK_STALLS
