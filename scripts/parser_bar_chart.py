@@ -220,8 +220,8 @@ def main():
                         worst_accepted_flits_list[routing] = worst_accepted_flits
                         vc_utilization_values_list[routing] = vc_utilization_values
 
-                        fairness_injected_values_list[routing] = fairness_injected_values
-                        fairness_accepted_values_list[routing] = fairness_accepted_values
+                        fairness_injected_values_list[routing] = fairness_injected_values[0]
+                        fairness_accepted_values_list[routing] = fairness_accepted_values[0]
 
 
                     
@@ -245,7 +245,7 @@ def main():
                     #show the grid
                     ax.grid(True)
                     plt.title('Throughput [TP={}]'.format(traffic_pattern))
-                    
+                    plt.tight_layout()
 
                     plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_throughput_'+t+'.png')
                     print("Throughput plot created")
@@ -263,6 +263,8 @@ def main():
                         ax.annotate(str(p.get_height()), (p.get_x() * 1.005, p.get_height() * 1.005))
                     #show the grid
                     ax.grid(True)
+                    plt.tight_layout()
+
                     plt.title('Hops [TP={}]'.format(traffic_pattern))
                     plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_hops_'+t+'.png')
                     print("Hops plot created")
@@ -290,22 +292,26 @@ def main():
 
                     #show grid 0.1
                     plt.grid(True, which='both', alpha=0.1)
+                    plt.tight_layout()
                     #plt.show()
                     plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_VC_util_'+t+'.png')
 
                     #Fairness injected
-                    d = {"routings": list(fairness_injected_values_list.keys()), "fairness_injected": list(fairness_injected_values_list.values())}
+                    d = {"routings": list(fairness_injected_values_list.keys()), "fairness_injected": fairness_injected_values_list.values()}
+                    #print(d)
                     data = pd.DataFrame(data=d)
-                    ax =  data.plot.bar(y="fairness_injected", x="routings", legend=False, title='Jain index injected')
+                    #print(data)
+                    ax =  data.plot.bar(x="routings", y="fairness_injected", legend=False, title='Jain index injected')
                     ax.set_xlabel('Routing Functions')
                     ax.set_ylabel('Index')
                     ax.set_title('Jain index injection')
-                    ax.set_xticklabels(routings, rotation=30)
                     #show numbers on bars
                     for p in ax.patches:
                         ax.annotate(str(p.get_height()), (p.get_x() * 1.005, p.get_height() * 1.005))
                     #show the grid
                     ax.grid(True)
+
+                    plt.tight_layout()
                     plt.title('Fairness [TP={}]'.format(traffic_pattern))
                     plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_fairness_injected_'+t+'.png')
                     print("Fairness plot created")
@@ -324,6 +330,7 @@ def main():
                     #show the grid
                     ax.grid(True)
                     plt.title('Fairness [TP={}]'.format(traffic_pattern))
+                    plt.tight_layout()
                     plt.savefig('./plots/'+topology+"_"+sim_file_plot+'_fairness_accepted_'+t+'.png')
                     print("Fairness plot created")
 
