@@ -44,6 +44,7 @@
 
 
 #include <sstream>
+#include <map>
 #include "booksim.hpp"
 #include "routefunc.hpp"
 #include "traffic.hpp"
@@ -92,6 +93,9 @@ bool gTrace;
 ostream * gWatchOut;
 
 int *node_vectors;
+
+//BRINR
+map<int, map< int, vector<int>>> link_restrictions_hyperx;
 
 
 /////////////////////////////////////////////////////////////////////////////

@@ -30,7 +30,8 @@
 #include <string>
 #include <vector>
 #include <iostream>
-
+#include <map>
+using namespace std;
 /*all declared in main.cpp*/
 
 int GetSimTime();
@@ -53,5 +54,8 @@ extern bool gTrace;
 extern std::ostream * gWatchOut;
 
 extern int *node_vectors;
+
+//BRINR
+extern map<int, map< int, vector<int>>> link_restrictions_hyperx;
 
 #endif
