@@ -1036,11 +1036,6 @@ void IQRouter::_VCAllocUpdate()
 						   << "." << endl;
 			}
 
-			if(output_and_vc < (gN *(gK-1))*_vcs){
-				_overall_vc_utilization[vc]++;
-				_vc_assigments++;
-			}
-
 
 			//printf("virtual channel allocation: %d %d %d\n", input, match_vc, match_output);
 			//_overall_vc_utilization[vc] ++;
@@ -2406,6 +2401,12 @@ void IQRouter::_SWAllocUpdate()
 
 			f->hops++;
 			f->vc = match_vc;
+			assert(f->hops != 0);
+			if ( output < (gN * (gK-1) ) ){ //&& input < (gN * (gK-1) )
+				_overall_vc_utilization[f->vc]++;
+				_vc_assigments++;
+			//assert(f->hops == 0);
+			}
 
 			if (!_routing_delay && f->head)
 			{
@@ -2669,6 +2670,12 @@ void IQRouter::_SwitchUpdate()
 		_output_buffer[output].push(f);
 		// the output buffer size isn't precise due to flits in flight
 		// but there is a maximum bound based on output speed up and ST traversal
+
+		/*if ( output < (gN * (gK-1) ) && f->hops != 0){
+			_overall_vc_utilization[f->vc]++;
+			_vc_assigments++;
+			//assert(f->hops == 0);
+		}*/
 		assert(_output_buffer[output].size() <= (size_t)_output_buffer_size + _crossbar_delay * _output_speedup + (_output_speedup - 1) || _output_buffer_size == -1);
 		_crossbar_flits.pop_front();
 	}
