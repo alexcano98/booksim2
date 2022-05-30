@@ -2219,8 +2219,8 @@ void dal_vct_random_hyperx(const Router *r, const Flit *f, int in_channel,
 						//shuffle with a fixed seed
 						std::mt19937 g(RandomInt(INT_MAX));
 						std::shuffle(salidas.begin(), salidas.end(), std::mt19937(std::random_device()()));
-
-						for (int t = 0; t < gK - 1; t++)
+						
+						/*for (int t = 0; t < gK - 1; t++)
 						{
 							k_salida = salidas[t];
 							puerto_miss = i * (gK - 1) + k_salida;
@@ -2229,7 +2229,7 @@ void dal_vct_random_hyperx(const Router *r, const Flit *f, int in_channel,
 							
 							if ((puerto_miss != puerto_min) && (puerto_miss != in_channel))
 								break;
-						}
+						}*/
 
 						/*
 						for (int t = 0; t < gK - 1; t++)
@@ -2254,11 +2254,27 @@ void dal_vct_random_hyperx(const Router *r, const Flit *f, int in_channel,
 							free_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcBegin, puerto_miss * gNumVCs + vcEnd, free_credits);
 						}*/
 
-
+						int max_miss = 0;
 						if ((occ_min - occ_mean - 3 * num_canales >= 0))
 						{
+
+							for (int t = 0; t < gK - 1; t++)
+							{
+								k_salida = salidas[t];
+								puerto_miss = i * (gK - 1) + k_salida;
+								occ_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcBegin, puerto_miss * gNumVCs + vcEnd, ocupancy);
+								free_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcBegin, puerto_miss * gNumVCs + vcEnd, free_credits);
+								
+								if ((puerto_miss != puerto_min) && (puerto_miss != in_channel)){
+									
+										outputs->AddRange(puerto_miss, vcBegin, vcEnd,  (free_miss + free_mean) +1);
+										max_miss++;
+										if(max_miss == 2) break;
+								}
+									
+							}
 							
-							outputs->AddRange(puerto_miss, vcBegin, vcEnd,  (free_miss + free_mean) +1);
+						
 
 						}else if(occ_mean + num_canales > occ_min){
 
@@ -2268,7 +2284,22 @@ void dal_vct_random_hyperx(const Router *r, const Flit *f, int in_channel,
 						} else if (occ_mean >= 5 *num_canales ) //(occ_min == 8 * canales_por_salto && occ_mean < 7 * canales_por_salto)
 						{ 
 							outputs->AddRange(puerto_min, vcBegin, vcEnd,  (free_min + (free_mean  + 3 * num_canales)) +1);
-							outputs->AddRange(puerto_miss, vcBegin, vcEnd,  (free_miss + free_mean)  +1);
+							//outputs->AddRange(puerto_miss, vcBegin, vcEnd,  (free_miss + free_mean)  +1);
+							for (int t = 0; t < gK - 1; t++)
+							{
+								k_salida = salidas[t];
+								puerto_miss = i * (gK - 1) + k_salida;
+								occ_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcBegin, puerto_miss * gNumVCs + vcEnd, ocupancy);
+								free_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcBegin, puerto_miss * gNumVCs + vcEnd, free_credits);
+								
+								if ((puerto_miss != puerto_min) && (puerto_miss != in_channel)){
+									
+										outputs->AddRange(puerto_miss, vcBegin, vcEnd,  (free_miss + free_mean) +1);
+										max_miss++;
+										if(max_miss == 2) break;
+								}
+									
+							}
 						}
 						else
 						{
