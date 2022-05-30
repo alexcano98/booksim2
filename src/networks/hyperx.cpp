@@ -99,6 +99,7 @@ void Hyperx::RegisterRoutingFunctions()
 	gRoutingFunctionMap["dal_wormhole_hyperx"] = &dal_wormhole_hyperx;
 	gRoutingFunctionMap["dal_vct_hyperx"] = &dal_vct_random_hyperx; // &dal_vct_hyperx;
 	gRoutingFunctionMap["dal_vct_random_hyperx"] = &dal_vct_random_hyperx;
+	gRoutingFunctionMap["dal_vct_random2_hyperx"] = &dal_vct_random2_hyperx;
 	gRoutingFunctionMap["dal_vct_turned_hyperx"] = &dal_vct_turned_hyperx;
 
 	gRoutingFunctionMap["minimal_turn_model_hyperx"] = &minimal_turn_model_hyperx;
@@ -923,7 +924,7 @@ void valiant_hyperx(const Router *r, const Flit *f, int in_channel,
 		int const available_vcs = (vcEnd - vcBegin + 1) / 2;
 		assert(available_vcs > 0);
 
-		if (nodo_destino == nodo_actual && f->ph == 1)
+		if (nodo_destino == nodo_actual)
 		{
 			f->ph = 1;
 			out_port = gN * (gK - 1) + calculateExitPort(f->dest); // sacamos el outpor exacto
@@ -1873,10 +1874,14 @@ void omni_war_random_hyperx(const Router *r, const Flit *f, int in_channel, Outp
 					{
 						
 						outputs->AddRange(puerto_miss, vcBegin, vcEnd, free_miss + free_mean);
-					}
-					else if (occ_mean >= 5 *canales_por_salto ) //(occ_min == 8 * canales_por_salto && occ_mean < 7 * canales_por_salto)
+
+					}else if(occ_mean + canales_por_salto >= occ_min){
+
+						outputs->AddRange(puerto_min, vcBegin, vcEnd, free_min + free_mean + 3 * canales_por_salto);
+
+					} else if (occ_mean >= 5 *canales_por_salto ) //(occ_min == 8 * canales_por_salto && occ_mean < 7 * canales_por_salto)
 					{ 
-						outputs->AddRange(puerto_min, vcBegin, vcEnd, free_mean + 3 * canales_por_salto);
+						outputs->AddRange(puerto_min, vcBegin, vcEnd, free_min + free_mean + 3 * canales_por_salto);
 						outputs->AddRange(puerto_miss, vcBegin, vcEnd, free_miss + free_mean);
 					}
 					else
@@ -2113,7 +2118,7 @@ void dal_vct_random_hyperx(const Router *r, const Flit *f, int in_channel,
 {
 
 	int vcBegin = 0, vcEnd = gNumVCs - 1;
-	int vcTrueBegin = vcBegin;
+	//int vcTrueBegin = vcBegin;
 
 	if (f->type == Flit::READ_REQUEST)
 	{
@@ -2198,8 +2203,213 @@ void dal_vct_random_hyperx(const Router *r, const Flit *f, int in_channel,
 
 					int condicion = (node_vectors[nodo_fuente * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
 
-					int escape_prio = 1; //getDataForVCRange2(puerto_min * gNumVCs , puerto_min * gNumVCs , free_credits); //primer canal solo
+					//int escape_prio = 1; //getDataForVCRange2(puerto_min * gNumVCs , puerto_min * gNumVCs , free_credits); //primer canal solo
+					int hops_bias = f->hops +1;
+					
+					if (condicion == 0)
+					{
+						int k_salida = RandomInt(gK - 2);
+						int puerto_miss = i * (gK - 1) + k_salida;
+						int occ_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcBegin, puerto_miss * gNumVCs + vcEnd, ocupancy);
+						int free_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcBegin, puerto_miss * gNumVCs + vcEnd, free_credits);
+						//int k_repuesto = -1;
+						
+						std::vector<int> salidas(gK - 2);
+						std::iota(salidas.begin(), salidas.end(), 0);
+						//shuffle with a fixed seed
+						std::mt19937 g(RandomInt(INT_MAX));
+						std::shuffle(salidas.begin(), salidas.end(), std::mt19937(std::random_device()()));
 
+						for (int t = 0; t < gK - 1; t++)
+						{
+							k_salida = salidas[t];
+							puerto_miss = i * (gK - 1) + k_salida;
+							occ_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcBegin, puerto_miss * gNumVCs + vcEnd, ocupancy);
+							free_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcBegin, puerto_miss * gNumVCs + vcEnd, free_credits);
+							
+							if ((puerto_miss != puerto_min) && (puerto_miss != in_channel))
+								break;
+						}
+
+						/*
+						for (int t = 0; t < gK - 1; t++)
+						{
+							if ((puerto_miss != puerto_min) && (puerto_miss != in_channel))
+								k_repuesto = k_salida;
+
+							if ((puerto_miss != puerto_min) && (puerto_miss != in_channel) && ((occ_mean) >= occ_miss))
+								break;
+
+							k_salida = (k_salida + 1) % (gK - 1);
+							puerto_miss = i * (gK - 1) + k_salida;
+							occ_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcBegin, puerto_miss * gNumVCs + vcEnd, ocupancy);
+							free_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcBegin, puerto_miss * gNumVCs + vcEnd, free_credits);
+						}
+						assert(k_repuesto != -1);
+
+						if (puerto_min == puerto_miss)
+						{
+							puerto_miss = i * (gK - 1) + k_repuesto;
+							occ_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcBegin, puerto_miss * gNumVCs + vcEnd, ocupancy);
+							free_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcBegin, puerto_miss * gNumVCs + vcEnd, free_credits);
+						}*/
+
+
+						if ((occ_min - occ_mean - 3 * num_canales >= 0))
+						{
+							
+							outputs->AddRange(puerto_miss, vcBegin, vcEnd,  (free_miss + free_mean) +1);
+
+						}else if(occ_mean + num_canales > occ_min){
+
+							outputs->AddRange(puerto_min, vcBegin, vcEnd,  (free_min + (free_mean  + 3 * num_canales)) +1);
+							//outputs->AddRange(puerto_miss, vcBegin, vcEnd,  (free_miss + free_mean) +1);
+
+						} else if (occ_mean >= 5 *num_canales ) //(occ_min == 8 * canales_por_salto && occ_mean < 7 * canales_por_salto)
+						{ 
+							outputs->AddRange(puerto_min, vcBegin, vcEnd,  (free_min + (free_mean  + 3 * num_canales)) +1);
+							outputs->AddRange(puerto_miss, vcBegin, vcEnd,  (free_miss + free_mean)  +1);
+						}
+						else
+						{
+							outputs->AddRange(puerto_min, vcBegin, vcEnd,  (free_min + (free_mean  + 3 * num_canales)) +1); //free_min DENERIAAA
+							//assert(false);
+						}
+							
+
+					}
+					else
+					{
+						outputs->AddRange(puerto_min, vcBegin, vcEnd, 16 * num_canales + 1); //(free_min + (free_mean + 3 * num_canales))
+					}
+
+					if(dor == 0){
+						dor = 1;
+						outputs->AddRange(puerto_min, 0, 0, 0);
+					}
+				}
+
+			}
+		}
+	}
+}
+
+
+void dal_vct_random2_hyperx(const Router *r, const Flit *f, int in_channel,
+						   OutputSet *outputs, bool inject)
+{
+
+	int vcBegin = 0, vcEnd = gNumVCs - 1;
+	//int vcTrueBegin = vcBegin;
+
+	if (f->type == Flit::READ_REQUEST)
+	{
+		vcBegin = gReadReqBeginVC;
+		vcEnd = gReadReqEndVC;
+	}
+	else if (f->type == Flit::WRITE_REQUEST)
+	{
+		vcBegin = gWriteReqBeginVC;
+		vcEnd = gWriteReqEndVC;
+	}
+	else if (f->type == Flit::READ_REPLY)
+	{
+		vcBegin = gReadReplyBeginVC;
+		vcEnd = gReadReplyEndVC;
+	}
+	else if (f->type == Flit::WRITE_REPLY)
+	{
+		vcBegin = gWriteReplyBeginVC;
+		vcEnd = gWriteReplyEndVC;
+	}
+	assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
+	assert(gNumVCs >= 2);
+
+	outputs->Clear();
+
+	int out_port = -1;
+
+	if (inject)
+	{
+
+		out_port = -1;
+		f->ph = 0;
+		outputs->AddRange(out_port, vcBegin, vcEnd);
+	}
+	else
+	{ // si no se inyecta
+
+		int dest = f->dest;
+		int targetr = (int)(dest / gC);
+
+		if (targetr == r->GetID())
+		{ // if we are at the final router, yay, output to client
+			out_port = gN * (gK - 1) + calculateExitPort(dest);
+			outputs->AddRange(out_port, vcBegin, vcEnd);
+		}
+		else
+		{
+
+			int escape_vcs = 1;
+			int num_canales = gNumVCs - escape_vcs;
+			int nodo_destino = targetr;
+			int nodo_actual = r->GetID();
+			int nodo_fuente = calculateRouter(f->src);
+
+			int distance_to_dest = find_distance_hyperx(f->dest, nodo_actual * gC);
+
+			vector<int> free_credits = r->FreeCredits();
+			vector<int> ocupancy = r->UsedCredits();
+
+			
+			int dor = 0;
+
+			// adaptativo
+			vcBegin += escape_vcs;
+			int free_mean_total = 0;
+			int free_min_total = 0;
+			
+			for (int i = 0; i < gN; i++)
+			{
+				int salida = (node_vectors[nodo_destino * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
+				if (salida != 0)
+				{
+					int puerto_min = i * (gK - 1) + salida - 1;
+					free_mean_total += getMeanDataExcluding(vcBegin, vcEnd, free_credits, -1, i);
+
+					int free_min = getDataForVCRange2(puerto_min * gNumVCs + vcBegin, puerto_min * gNumVCs + vcEnd, free_credits);
+					free_min_total += free_min;
+				}
+			}
+
+			free_mean_total = free_mean_total / distance_to_dest;
+			free_min_total = free_min_total / distance_to_dest;
+			//add dor escpape route
+			int out_port_dor = calculateDOR_routers(targetr, r->GetID());
+			outputs->AddRange(out_port_dor, 0, 0, 0);
+
+			
+			for (int i = 0; i < gN; i++)
+			{
+				int salida = (node_vectors[nodo_destino * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
+
+				if (salida != 0)
+				{ // Si hay que recorrer esta salida...
+
+					int puerto_min = i * (gK - 1) + salida - 1;
+					
+					int free_min = getDataForVCRange2(puerto_min * gNumVCs + vcBegin, puerto_min * gNumVCs + vcEnd, free_credits);
+					int free_mean = getMeanDataExcluding(vcBegin, vcEnd, free_credits, puerto_min, i);
+
+					int occ_min = getDataForVCRange2(puerto_min * gNumVCs + vcBegin, puerto_min * gNumVCs + vcEnd, ocupancy);
+					int occ_mean = getMeanDataExcluding(vcBegin, vcEnd, ocupancy, puerto_min, i);
+
+
+					int condicion = (node_vectors[nodo_fuente * gN + i] - node_vectors[nodo_actual * gN + i] + gK) % gK;
+
+					//int escape_prio = 1; //getDataForVCRange2(puerto_min * gNumVCs , puerto_min * gNumVCs , free_credits); //primer canal solo
+					int hops_bias = f->hops +1;
+					
 					if (condicion == 0)
 					{
 						int k_salida = RandomInt(gK - 2);
@@ -2230,80 +2440,39 @@ void dal_vct_random_hyperx(const Router *r, const Flit *f, int in_channel,
 							free_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcBegin, puerto_miss * gNumVCs + vcEnd, free_credits);
 						}
 
-						//print a summary
-						//cout << "Router " << nodo_actual << ": " << "puerto_min: " << puerto_min << " occ_min: " << occ_min << " free_min: " << free_min << " puerto_miss: " << puerto_miss << " occ_miss: " << occ_miss << " free_miss: " << free_miss << " occ_mean " << occ_mean << " free_mean " << free_mean << endl;
 
-						//=========== THE ROUTING COMPUTATION ===========
-
-						if ((occ_min - occ_mean - 3 * num_canales >= 0)) //esto puede ser engañoso
+						if ((occ_min - occ_mean - 3 * num_canales >= 0))
 						{
-							outputs->AddRange(puerto_miss, vcBegin, vcEnd, (free_miss + free_mean + 1)); //missrouting
-							outputs->AddRange(puerto_min, vcBegin, vcEnd, free_mean + free_min + 1); //idk
-
-							/*for (int t = 0; t < gK - 1; t++)
-							{
-								k_salida = (k_salida + 1) % (gK - 1);
-								puerto_miss = i * (gK - 1) + k_salida;
-								//occ_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcTrueBegin, puerto_miss * gNumVCs + vcEnd, ocupancy);
-								free_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcTrueBegin, puerto_miss * gNumVCs + vcEnd, free_credits);
-
-								if ((puerto_miss == puerto_min) || (puerto_miss == in_channel))
-									continue;
-								
-								outputs->AddRange(puerto_miss, vcBegin, vcEnd, (free_miss + free_mean + 1)); //missrouting
-								
-							}*/
-							escape_prio= 0;
-						}
-						else if (occ_mean >= 5 *num_canales ) //occ_min >= 8 * num_canales -3
-						{ 
-							outputs->AddRange(puerto_min, vcBegin, vcEnd, free_mean + 3 * num_canales + 1); //idk
-							outputs->AddRange(puerto_miss, vcBegin, vcEnd, free_mean + free_miss + 1);
-							/*for (int t = 0; t < gK - 1; t++)
-							{
-								k_salida = (k_salida + 1) % (gK - 1);
-								puerto_miss = i * (gK - 1) + k_salida;
-								//occ_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcTrueBegin, puerto_miss * gNumVCs + vcEnd, ocupancy);
-								free_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcTrueBegin, puerto_miss * gNumVCs + vcEnd, free_credits);
-
-								if ((puerto_miss == puerto_min) || (puerto_miss == in_channel) || occ_mean <= occ_miss)
-									continue;
-								
-								outputs->AddRange(puerto_miss, vcBegin, vcEnd, (free_miss + free_mean + 1)); //missrouting
-								
-							}*/
 							
+							outputs->AddRange(puerto_miss, vcBegin, vcEnd, free_mean* hops_bias* (free_miss) +1);
+
+						}else if(occ_mean + num_canales > occ_min)
+						{
+
+							outputs->AddRange(puerto_min, vcBegin, vcEnd, free_mean* hops_bias* (free_min + (3 * num_canales)) +1);
+							outputs->AddRange(puerto_miss, vcBegin, vcEnd, free_mean* hops_bias* (free_miss) +1);
+						} else if (occ_mean >= 5 *num_canales ) //(occ_min == 8 * canales_por_salto && occ_mean < 7 * canales_por_salto)
+						{ 
+							outputs->AddRange(puerto_min, vcBegin, vcEnd, free_mean* hops_bias* (free_min + ( 3 * num_canales)) +1);
+							outputs->AddRange(puerto_miss, vcBegin, vcEnd, free_mean* hops_bias* (free_miss )  +1);
 						}
 						else
 						{
-							outputs->AddRange(puerto_min, vcBegin, vcEnd, (free_min + free_mean + 2 * num_canales + 1 ) ); //min
-							//outputs->AddRange(puerto_miss, vcBegin, vcEnd, (free_miss + free_mean + 1)); //missrouting
-							/*for (int t = 0; t < gK - 1; t++)
-							{
-								k_salida = (k_salida + 1) % (gK - 1);
-								puerto_miss = i * (gK - 1) + k_salida;
-								//occ_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcTrueBegin, puerto_miss * gNumVCs + vcEnd, ocupancy);
-								free_miss = getDataForVCRange2(puerto_miss * gNumVCs + vcTrueBegin, puerto_miss * gNumVCs + vcEnd, free_credits);
-
-								if ((puerto_miss == puerto_min) || (puerto_miss == in_channel) || occ_mean <= occ_miss)
-									continue;
-								
-								outputs->AddRange(puerto_miss, vcBegin, vcEnd, (free_miss + free_mean + 1)); //missrouting
-								
-							}*/
+							outputs->AddRange(puerto_min, vcBegin, vcEnd, free_mean* hops_bias* (free_min + (3 * num_canales)) +1); //free_min DENERIAAA
+							//assert(false);
 						}
+							
 					}
 					else
 					{
-						outputs->AddRange(puerto_min, escape_vcs, vcEnd, (free_min + free_mean + 1 + 2 * num_canales) ); //min
+						outputs->AddRange(puerto_min, vcBegin, vcEnd, free_mean* hops_bias* (free_min + (3 * num_canales)) + 1);
 					}
 
 					if(dor == 0){
 						dor = 1;
-						outputs->AddRange(puerto_min, vcBegin - escape_vcs, vcBegin - 1, 0);
+						outputs->AddRange(puerto_min, 0, 0, 0);
 					}
 				}
-
 			}
 		}
 	}
