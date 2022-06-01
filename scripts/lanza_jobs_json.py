@@ -215,7 +215,7 @@ if os.path.isfile(topology_dir + "/" + json_file):
     os.rename(topology_dir + "/" + json_file, topology_dir + "/" + json_file + ".old")
 
 #copy the json file to the topology directory
-if not os.path.isfile(json_file):
+if not os.path.isfile(topology_dir + "/" + json_file):
     shutil.copy(json_file, topology_dir)
 
 
@@ -244,9 +244,11 @@ for traffic in data["traffic"]:
                         file.write("#SBATCH --error=" + topology_dir + "/" + traffic + "/" + str(num_vcs) + "_" + str(injection_rate) \
                         + "_" + routing_function + "_" + str(allocator) + "_" + str(packet_size)+ ".err")
 
-                        file.write("\n")
+                        #file.write("\n")
                         #set 400MB of memory to the job
-                        file.write("#SBATCH --mem=5000MB")
+                        #file.write("#SBATCH --mem=5000MB")
+                        #set limit time of three days
+                        
                         file.write("\n")
                         file.write("./src/booksim " + config_file + " traffic=" + traffic + " num_vcs=" + str(num_vcs) \
                         + " injection_rate=" + str(injection_rate) + " routing_function=" + routing_function + " vc_allocator=" + str(allocator) \
