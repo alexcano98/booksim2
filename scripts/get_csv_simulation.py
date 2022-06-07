@@ -14,8 +14,8 @@ parser.add_argument('-o', '--output', help='output file name', required=True)
 args = parser.parse_args()
 #get the csv header with ; as separator
 
-csv_header = pd.read_csv("scripts/params/header-csv.csv", sep=";")
-print(csv_header)
+df_header = pd.read_csv("scripts/params/header-csv.csv", sep=";")
+print(df_header)
 
 #read the trafic files in traffic file as plain text
 traffics = []
@@ -29,6 +29,8 @@ with open(args.directory + "traffics.txt", "r") as f:
     traffics = [x for x in f.read().split()]
 print("traffics: ", traffics)
 
+df_header.to_csv(args.output, sep=";", index=False)
+
 for t in traffics:
     #iter the files in the directory recived as argument and ends with _sim_out.csv
     files = glob.glob(args.directory + t +"/*_sim_out.csv")
@@ -37,15 +39,19 @@ for t in traffics:
 
     for file in files:
         #read the file
-        df = pd.read_csv(file)
-
+        df = pd.read_csv(file, sep=",", header=None)
         #split the file name by "_"
-        file_name = file.split("_")
+        file_name = file.split("/")[-1].split("_")
 
-        vcs = file_name[1]
-        routing = file_name[3]
-        #print(str(file_name))
-        #append the vcs and routing to the csv file, two lasts columns
+        vcs = file_name[0]
+        routing = file_name[2]
+        if routing == "omni":
+        	routing= "omni_war"
+        	
+        if routing == "dal":
+        	routing= "dal_vct"
+
+        
         df['vcs'] = vcs
         df['routing'] = routing
         print(df)
