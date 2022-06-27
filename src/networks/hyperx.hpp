@@ -34,8 +34,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class Hyperx : public Network {
 
-  bool _mesh;
-
   int _k;
   int _n;
   int _c;
@@ -76,22 +74,21 @@ void dor_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outp
 void O1_turn_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void adaptive_dor_exit_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void valiant_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
+void valiant_escalera_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
+void valiant_escalera_dor_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
+
+
 void ugal_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void adaptive_escalera_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void adaptive_escape_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 
-
-void omni_war_priority_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
-void omni_war_random_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
 void omni_war_hyperx( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject );
+void omni_dor_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
+
 
 void dal_wormhole_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
 void dal_vct_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
-void dal_vct_random_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
-void dal_vct_turned_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
-void dal_vct_random2_hyperx(const Router *r, const Flit *f, int in_channel,OutputSet *outputs, bool inject);
 
-void omni_dor_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
 
 void minimal_turn_model_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
 void missrouting_turn_model_hyperx(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
